@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net481</TargetFrameworks>
+        <LangVersion>12</LangVersion>
+
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NUnit" Version="4.1.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)'=='net481'">
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
+        <Reference Include="WindowsBase" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\NUnit.ApplicationDomain\NUnit.ApplicationDomain.csproj" />
+        <ProjectReference Include="..\NUnit.ApplicationDomain.Base.Test\NUnit.ApplicationDomain.Base.Test.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="System.Configuration" />
+    </ItemGroup>
+
+</Project>

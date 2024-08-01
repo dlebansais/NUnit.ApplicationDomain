@@ -2,13 +2,9 @@
 
     <PropertyGroup>
         <TargetFrameworks>net481</TargetFrameworks>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>12</LangVersion>
-    </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="NUnit" Version="4.1.0" />
-    </ItemGroup>
+    </PropertyGroup>
 
 </Project>
