@@ -2,9 +2,25 @@
 
     <PropertyGroup>
         <TargetFrameworks>net481</TargetFrameworks>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>12</LangVersion>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <Version>4.1.0</Version>
+        <Authors>David Le Bansais</Authors>
+        <Company />
+        <Product />
+        <Description>A fork of zastrowm/NUnit.ApplicationDomain ported to NUnit 4.1.0</Description>
+        <AssemblyVersion>4.1.0.4</AssemblyVersion>
+        <FileVersion>4.1.0.4</FileVersion>
+        <RepositoryUrl>https://github.com/dlebansais/NUnit.ApplicationDomain</RepositoryUrl>
+        <NeutralLanguage>en-US</NeutralLanguage>
+        <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>
