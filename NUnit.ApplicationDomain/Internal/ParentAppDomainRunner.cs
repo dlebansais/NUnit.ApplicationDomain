@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security;
-using System.Security.Permissions;
+﻿namespace NUnit.ApplicationDomain.Internal;
+
+using global::System;
+using global::System.Collections.Concurrent;
+using global::System.Security;
+using global::System.Security.Permissions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
+#if NET8_0_OR_GREATER
+using AppDomain = System.AppDomain;
+using PermissionSet = System.Security.PermissionSet;
+using PermissionState = System.Security.Permissions.PermissionState;
+#endif
 
-namespace NUnit.ApplicationDomain.Internal
+/// <summary> Runs a TestMethodInformation in a child app domain. </summary>
+internal static class ParentAppDomainRunner
 {
-  /// <summary> Runs a TestMethodInformation in a child app domain. </summary>
-  internal static class ParentAppDomainRunner
-  {
     /// <summary> The setup/teardown methods that have been cached for each type thus far. </summary>
     private static readonly ConcurrentDictionary<Type, SetupAndTeardownMethods> CachedInfo
       = new ConcurrentDictionary<Type, SetupAndTeardownMethods>();
@@ -55,7 +58,7 @@ namespace NUnit.ApplicationDomain.Internal
                                                  testFixtureArguments);
 
       var domainInfo = appDomainFactory.GetAppDomainFor(methodData);
-      var domain = domainInfo.AppDomain;
+      AppDomain domain = domainInfo.AppDomain;
 
       // Add an assembly resolver for resolving any assemblies not known by the test application domain.
       InDomainAssemblyResolver assemblyResolver = new InDomainAssemblyResolver(new ResolveHelper());
@@ -129,5 +132,4 @@ namespace NUnit.ApplicationDomain.Internal
     {
       return new PermissionSet(PermissionState.Unrestricted);
     }
-  }
 }

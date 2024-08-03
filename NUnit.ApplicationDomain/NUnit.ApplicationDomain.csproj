@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net481</TargetFrameworks>
+        <TargetFrameworks>net481;net8.0</TargetFrameworks>
         <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>12</LangVersion>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <Version>4.1.0</Version>

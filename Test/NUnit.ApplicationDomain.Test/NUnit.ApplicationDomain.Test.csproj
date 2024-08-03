@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net481</TargetFrameworks>
+        <TargetFrameworks>net481;net8.0-windows7.0</TargetFrameworks>
         <LangVersion>12</LangVersion>
-
+        <UseWPF>true</UseWPF>
+        
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
@@ -17,15 +18,12 @@
         <Reference Include="PresentationCore" />
         <Reference Include="PresentationFramework" />
         <Reference Include="WindowsBase" />
+        <Reference Include="System.Configuration" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\NUnit.ApplicationDomain\NUnit.ApplicationDomain.csproj" />
         <ProjectReference Include="..\NUnit.ApplicationDomain.Base.Test\NUnit.ApplicationDomain.Base.Test.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="System.Configuration" />
     </ItemGroup>
 
 </Project>

@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿namespace NUnit.ApplicationDomain;
+
+using global::System;
+using global::System.IO;
+using global::System.Reflection;
 using NUnit.ApplicationDomain.Internal;
 using NUnit.Framework;
 
-namespace NUnit.ApplicationDomain
+/// <summary> All of the arguments for the TestExecutor. </summary>
+public class TestMethodInformation : MarshalByRefObject
 {
-  /// <summary> All of the arguments for the TestExecutor. </summary>
-  public class TestMethodInformation : MarshalByRefObject
-  {
     /// <summary> Constructor. </summary>
     /// <exception cref="ArgumentNullException"> When one or more required arguments are null. </exception>
     /// <exception cref="ArgumentException"> Thrown when one or more arguments have unsupported or
@@ -29,28 +27,28 @@ namespace NUnit.ApplicationDomain
                                    object?[]? testArguments,
                                    object?[]? testFixtureArguments)
     {
-      if (typeUnderTest == null)
-        throw new ArgumentNullException(nameof(typeUnderTest));
-      if (testMethod == null)
-        throw new ArgumentNullException(nameof(testMethod));
-      if (testMethod.DeclaringType == null)
-        throw new ArgumentNullException(nameof(testMethod));
-      if (methods == null)
-        throw new ArgumentNullException(nameof(methods));
+        if (typeUnderTest == null)
+            throw new ArgumentNullException(nameof(typeUnderTest));
+        if (testMethod == null)
+            throw new ArgumentNullException(nameof(testMethod));
+        if (testMethod.DeclaringType == null)
+            throw new ArgumentNullException(nameof(testMethod));
+        if (methods == null)
+            throw new ArgumentNullException(nameof(methods));
 
-      string? configFile = FindConfigFile(Assembly.GetAssembly(typeUnderTest)!);
+        string? configFile = FindConfigFile(Assembly.GetAssembly(typeUnderTest)!);
 
-      TypeUnderTest = typeUnderTest;
-      MethodUnderTest = testMethod;
-      Methods = methods;
-      DataStore = dataStore;
-      AppConfigFile = configFile;
+        TypeUnderTest = typeUnderTest;
+        MethodUnderTest = testMethod;
+        Methods = methods;
+        DataStore = dataStore;
+        AppConfigFile = configFile;
 
-      OutputStream = Console.Out;
-      ErrorStream = Console.Error;
+        OutputStream = Console.Out;
+        ErrorStream = Console.Error;
 
-      Arguments = testArguments;
-      FixtureArguments = testFixtureArguments;
+        Arguments = testArguments;
+        FixtureArguments = testFixtureArguments;
     }
 
     /// <summary> The setup and teardown methods to invoke before/after running the test. </summary>
@@ -91,8 +89,7 @@ namespace NUnit.ApplicationDomain
     /// <returns> The path to the config file, or null if it does not exist. </returns>
     private static string? FindConfigFile(Assembly assembly)
     {
-      string configFile = new Uri(assembly.EscapedCodeBase).LocalPath + ".config";
-      return File.Exists(configFile) ? configFile : null;
+        string configFile = new Uri(assembly.Location).LocalPath + ".config";
+        return File.Exists(configFile) ? configFile : null;
     }
-  }
 }
