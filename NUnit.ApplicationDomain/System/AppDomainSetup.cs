@@ -1,10 +1,11 @@
-﻿namespace NUnit.ApplicationDomain.System;
+﻿#if NET8_0_OR_GREATER
 
-using global::System;
-using global::System.Reflection;
+namespace NUnit.ApplicationDomain.System;
 
 public class AppDomainSetup
 {
     public string? ApplicationBase { get; set; }
     public string? ConfigurationFile { get; set; }
 }
+
+#endif

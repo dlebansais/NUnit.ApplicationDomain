@@ -1,5 +1,9 @@
-﻿namespace NUnit.ApplicationDomain.System.Security.Policy;
+﻿#if NET8_0_OR_GREATER
 
-public class StrongName
+namespace NUnit.ApplicationDomain.System.Security.Policy;
+
+internal class StrongName
 {
 }
+
+#endif

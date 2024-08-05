@@ -52,7 +52,12 @@ internal static class Utils
     /// <returns> An instance of T, unwrapped from the domain. </returns>
     internal static T? CreateInstanceAndUnwrap<T>(this AppDomain domain)
     {
+#if NET8_0_OR_GREATER
+        return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.GetName(),
+                                                typeof(T).FullName!);
+#else
         return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.FullName!,
                                                 typeof(T).FullName!);
+#endif
     }
 }
