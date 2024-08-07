@@ -50,14 +50,15 @@ internal static class Utils
     /// <param name="domain"> The domain in which the object should be constructed. </param>
     /// <typeparam name="T"> The type of the object to construct </typeparam>
     /// <returns> An instance of T, unwrapped from the domain. </returns>
+#if NET8_0_OR_GREATER
+    internal static object? CreateInstanceAndUnwrap<T>(this AppDomain domain, bool usePublicConstructor = false, params object[] args)
+    {
+        return domain.CreateInstanceAndUnwrap(typeof(T).Assembly.Location, typeof(T).FullName!, usePublicConstructor, args);
+    }
+#else
     internal static T? CreateInstanceAndUnwrap<T>(this AppDomain domain)
     {
-#if NET8_0_OR_GREATER
-        return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.GetName(),
-                                                typeof(T).FullName!);
-#else
-        return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.FullName!,
-                                                typeof(T).FullName!);
-#endif
+        return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.FullName!, typeof(T).FullName!);
     }
+#endif
 }

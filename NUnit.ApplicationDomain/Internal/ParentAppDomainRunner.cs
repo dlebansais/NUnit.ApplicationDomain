@@ -2,15 +2,15 @@
 
 using global::System;
 using global::System.Collections.Concurrent;
+using global::System.Collections.Generic;
+using global::System.Reflection;
 using global::System.Security;
 using global::System.Security.Permissions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
-#if NET8_0_OR_GREATER
 using AppDomain = System.AppDomain;
 using PermissionSet = System.Security.PermissionSet;
 using PermissionState = System.Security.Permissions.PermissionState;
-#endif
 
 /// <summary> Runs a TestMethodInformation in a child app domain. </summary>
 internal static class ParentAppDomainRunner
@@ -36,44 +36,96 @@ internal static class ParentAppDomainRunner
       if (test == null)
         throw new ArgumentNullException(nameof(test));
 
-      var appDomainFactory = ConstructFactory(appDomainFactoryType);
+        var appDomainFactory = ConstructFactory(appDomainFactoryType);
 
-      var typeInfo = test.Fixture != null
-        ? test.TypeInfo
-        : test.Method?.TypeInfo;
+        var typeInfo = test.Fixture != null
+          ? test.TypeInfo
+          : test.Method?.TypeInfo;
 
-      if (typeInfo == null)
-        throw new ArgumentException("Cannot determine the type that the test belongs to");
+        if (typeInfo == null)
+            throw new ArgumentException("Cannot determine the type that the test belongs to");
 
-      var setupAndTeardown = GetSetupTeardownMethods(typeInfo.Type);
+        var setupAndTeardown = GetSetupTeardownMethods(typeInfo.Type);
 
-      var testArguments = CurrentArgumentsRetriever.GetTestArguments(test);
-      var testFixtureArguments = CurrentArgumentsRetriever.GetTestFixtureArguments(test);
+        var testArguments = CurrentArgumentsRetriever.GetTestArguments(test);
+        var testFixtureArguments = CurrentArgumentsRetriever.GetTestFixtureArguments(test);
+        var testMethod = test.Method?.MethodInfo;
 
-      var methodData = new TestMethodInformation(typeInfo.Type,
-                                                 test.Method?.MethodInfo,
-                                                 setupAndTeardown,
-                                                 AppDomainRunner.DataStore,
-                                                 testArguments,
-                                                 testFixtureArguments);
+        var methodData = new TestMethodInformation(typeInfo.Type,
+                                                   testMethod,
+                                                   setupAndTeardown,
+                                                   AppDomainRunner.DataStore,
+                                                   testArguments,
+                                                   testFixtureArguments);
 
-      var domainInfo = appDomainFactory.GetAppDomainFor(methodData);
-      AppDomain domain = domainInfo.AppDomain;
+        var domainInfo = appDomainFactory.GetAppDomainFor(methodData);
+        AppDomain domain = domainInfo.AppDomain;
 
-      // Add an assembly resolver for resolving any assemblies not known by the test application domain.
-      InDomainAssemblyResolver assemblyResolver = new InDomainAssemblyResolver(new ResolveHelper());
-      domain.AssemblyResolve += assemblyResolver.ResolveEventHandler;
+        // Add an assembly resolver for resolving any assemblies not known by the test application domain.
+        InDomainAssemblyResolver assemblyResolver = new InDomainAssemblyResolver(new ResolveHelper());
+        domain.AssemblyResolve += assemblyResolver.ResolveEventHandler;
 
+#if NET8_0_OR_GREATER
+        domain.Load(methodData.TypeUnderTest.Assembly.Location);
+
+        var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);
+
+        object[] args0 = new object[]
+        {
+            setupAndTeardown.SetupMethods,
+            setupAndTeardown.TeardownMethods,
+        };
+
+        object? result0 = domain.CreateInstanceAndUnwrap(typeof(SetupAndTeardownMethods).Assembly.Location, typeof(SetupAndTeardownMethods).FullName!, true, args0);
+
+        object? result3 = domain.CreateInstanceAndUnwrap(typeof(SharedDataStore).Assembly.Location, typeof(SharedDataStore).FullName!, true);
+
+        Dictionary<string, object?> lookup = (Dictionary<string, object?>)AppDomainRunner.DataStore!.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(AppDomainRunner.DataStore!)!;
+        Dictionary<string, object?> cloneLookup = (Dictionary<string, object?>)result3!.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(result3)!;
+
+        foreach (KeyValuePair<string, object?> entry in lookup)
+            cloneLookup.Add(entry.Key, entry.Value);
+
+        object? result4 = domain.CreateInstanceAndUnwrap(typeInfo.Type.Assembly.Location, typeInfo.Type.FullName!, true);
+
+        MethodInfo[] methods = result4!.GetType().GetMethods();
+        MethodInfo? clonedTestMethod = null;
+
+        foreach(MethodInfo method in methods)
+            if (method.Name == test.Method!.MethodInfo.Name)
+        {
+                clonedTestMethod = method;
+                break;
+        }
+
+        object[] args1 = new object[]
+        {
+            result4?.GetType()!,
+            clonedTestMethod!,
+            result0!,
+            result3!,
+            testArguments,
+            testFixtureArguments!,
+        };
+
+        object? result1 = domain.CreateInstanceAndUnwrap<TestMethodInformation>(usePublicConstructor: false, args1);
+
+        MethodInfo? executeMethod = inDomainRunner?.GetType().GetMethod("Execute");
+
+        // Store any resulting exception from executing the test method
+        var possibleException = executeMethod?.Invoke(inDomainRunner, new object?[] { result1! }) as Exception;
+#else
       domain.Load(methodData.TypeUnderTest.Assembly.GetName());
 
       var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>();
 
       // Store any resulting exception from executing the test method
       var possibleException = inDomainRunner?.Execute(methodData);
+#endif
 
-      domainInfo.Owner.MarkFinished(domainInfo);
+        domainInfo.Owner.MarkFinished(domainInfo);
 
-      return possibleException;
+        return possibleException;
     }
 
     /// <summary>

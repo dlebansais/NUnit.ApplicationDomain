@@ -45,14 +45,13 @@ public class AppDomain : IDisposable
 
     private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
-        FriendlyName = friendlyName;
         Info = info;
-        Console.WriteLine($"Creating AppDomain with name {friendlyName}, {RegisteredDomains.Count} created already");
-
         Context = new AssemblyLoadContext($"#{DomainCount}", isCollectible: true);
         DomainCount++;
 
         RegisteredDomains.Add(Context, this);
+
+        FriendlyName = $"{friendlyName} ({Context.Name})";
 
         Context.Resolving += OnResolving;
     }
@@ -68,26 +67,20 @@ public class AppDomain : IDisposable
         return new AppDomain(friendlyName, securityInfo, info, grantSet, fullTrustAssemblies);
     }
 
-    public object? CreateInstanceAndUnwrap(AssemblyName assemblyRef, string typeName)
+    public object? CreateInstanceAndUnwrap(string assemblyPath, string typeName, bool usePublicConstructor, params object[] args)
     {
-        Assembly LoadedAssembly = Context.LoadFromAssemblyName(assemblyRef);
-        object? Result = LoadedAssembly.CreateInstance(typeName);
-
-        Console.WriteLine($"Creating instance of {typeName} in {Context.Name}");
+        Assembly LoadedAssembly = Context.LoadFromAssemblyPath(assemblyPath);
+        object? Result = LoadedAssembly.CreateInstance(typeName, ignoreCase: false, BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic), binder: null, args, culture: null, activationAttributes: null);
         return Result;
     }
 
-    public Assembly Load(AssemblyName assemblyRef)
+    public Assembly Load(string assemblyPath)
     {
-        Console.WriteLine($"Loading {assemblyRef} in {Context.Name}");
-
-        return Context.LoadFromAssemblyName(assemblyRef);
+        return Context.LoadFromAssemblyPath(assemblyPath);
     }
 
     public static void Unload(AppDomain domain)
     {
-        Console.WriteLine($"Unloading {domain.Context.Name}");
-
         domain.Dispose();
     }
 
@@ -119,12 +112,28 @@ public class AppDomain : IDisposable
 
     private Assembly? OnResolving(AssemblyLoadContext context, AssemblyName assemblyRef)
     {
-        Console.WriteLine($"Resolving {assemblyRef} for {Context.Name}");
-
         return RaiseAssemblyResolve(assemblyRef.FullName);
+    }
+
+    public void PrintContextName()
+    {
+        // Console.WriteLine($"** Current context is {Context.Name}");
+    }
+
+    public static string GetLoadContext(Assembly assembly)
+    {
+        if (assembly.ReflectionOnly)
+            return "reflection-only context";
+        else if (assembly.IsDynamic)
+            return "no context (Dynamic)";
+        else if (assembly.Location is null)
+            return "no context (via Load(byte[]))";
+        else if (assembly.Location.StartsWith("CodeBase"))
+            return "default context";
+        else
+            return "some context";
     }
 
     public event ResolveEventHandler? AssemblyResolve;
 }
 #endif
-
