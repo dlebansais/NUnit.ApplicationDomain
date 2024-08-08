@@ -8,44 +8,43 @@ using global::System.Collections.Generic;
 using global::System.Linq;
 using global::System.Reflection;
 using global::System.Runtime.Loader;
-using global::System.Runtime.Serialization.Formatters.Binary;
 using global::System.Text.Json;
 using NUnit.ApplicationDomain.System.Security;
 using NUnit.ApplicationDomain.System.Security.Policy;
-using NUnit.Framework.Constraints;
 
-public class AppDomain : IDisposable
+public class AppDomain : MarshalByRefObject, IDisposable
 {
-    private static Dictionary<AssemblyLoadContext, AppDomain> RegisteredDomains;
+    private static Dictionary<AssemblyLoadContext, object> RegisteredDomains
+    {
+        get
+        {
+            object? SharedRegisteredDomains = global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains");
+            if (SharedRegisteredDomains is null)
+                global::System.AppDomain.CurrentDomain.SetData("RegisteredDomains", new Dictionary<AssemblyLoadContext, object>() { { AssemblyLoadContext.Default, new AppDomain() } });
+
+            return (Dictionary<AssemblyLoadContext, object>)global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains")!;
+        }
+    }
+
     private static int DomainCount;
-    private static AppDomain Default;
 
     public static AppDomain CurrentDomain
     {
         get
         {
-            Assembly assembly = Assembly.GetCallingAssembly();
-            AssemblyLoadContext? context = AssemblyLoadContext.GetLoadContext(assembly);
-            if (context is not null && RegisteredDomains.TryGetValue(context, out var domain))
-                return domain;
+            AssemblyLoadContext? CurrentContext = AssemblyLoadContext.GetLoadContext(Assembly.GetCallingAssembly());
+            if (CurrentContext is not null && RegisteredDomains.TryGetValue(CurrentContext, out object? Value) && Value is AppDomain Domain)
+                return Domain;
             else
-                return Default;
+                return null!;
         }
-    }
-
-    static AppDomain()
-    {
-        RegisteredDomains = new Dictionary<AssemblyLoadContext, AppDomain>();
-        Default = new AppDomain();
     }
 
     private AppDomain()
     {
         FriendlyName = string.Empty;
         Info = new AppDomainSetup();
-
         Context = AssemblyLoadContext.Default;
-        RegisteredDomains.Add(Context, this);
     }
 
     private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
@@ -54,18 +53,26 @@ public class AppDomain : IDisposable
         Context = new AppDomainAssemblyLoadContext($"#{DomainCount}", GetType().Assembly.Location);
         DomainCount++;
 
-        RegisteredDomains.Add(Context, this);
+        if (TryClone(this, out MarshalByRefObject? DomainClone))
+            RegisteredDomains.Add(Context, DomainClone!);
 
         FriendlyName = $"{friendlyName} ({Context.Name})";
 
         Context.Resolving += OnResolving;
     }
 
-    public string FriendlyName { get; }
-    public AppDomainSetup Info { get; }
+    public AppDomain(string friendlyName)
+    {
+        FriendlyName = friendlyName;
+        Info = new AppDomainSetup();
+        Context = AssemblyLoadContext.Default;
+    }
 
+    public string FriendlyName { get; }
+    private AppDomainSetup Info;
     private AssemblyLoadContext Context;
-    private Dictionary<string, object?> Data = new();
+
+    public Dictionary<string, object?> Data { get; set; } = new();
 
     internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
@@ -91,18 +98,28 @@ public class AppDomain : IDisposable
 
     public object? GetData(string name)
     {
-        if (Data.TryGetValue(name, out var data))
-            return data;
+        if (RegisteredDomains.TryGetValue(Context, out object? Value))
+        {
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data")?.GetValue(Value)!;
+            if (DomainData.TryGetValue(name, out var data))
+                return data;
+            else
+                return null;
+        }
         else
             return null;
     }
 
     public void SetData(string name, object? data)
     {
-        if (Data.ContainsKey(name))
-            Data[name] = data;
-        else
-            Data.Add(name, data);
+        if (RegisteredDomains.TryGetValue(Context, out object? Value))
+        {
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data")?.GetValue(Value)!;
+            if (DomainData.ContainsKey(name))
+                DomainData[name] = data;
+            else
+                DomainData.Add(name, data);
+        }
     }
 
     private Assembly? RaiseAssemblyResolve(string name)
@@ -263,6 +280,11 @@ public class AppDomain : IDisposable
                 return true;
             }
         }
+        else if (ObjType.IsAssignableTo(typeof(AssemblyLoadContext)))
+        {
+            clone = obj;
+            return true;
+        }
         else if (Attribute.IsDefined(ObjType, typeof(SerializableAttribute)))
         {
             if (TryGetTypeInDomain(ObjType, out Type? CloneDictionaryType))
@@ -287,25 +309,29 @@ public class AppDomain : IDisposable
         clone = null;
 
         Type SourceType = obj.GetType();
-        FieldInfo[] SourceFields = SourceType.GetFields();
+        BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        FieldInfo[] SourceFields = SourceType.GetFields(Flags);
 
         if (!TryCreateEmptyInstance(SourceType, obj, out object? Instance))
             return false;
 
         clone = (MarshalByRefObject)Instance!;
         Type DestinationType = clone.GetType();
-        FieldInfo[] DestinationFields = DestinationType.GetFields();
+        FieldInfo[] DestinationFields = DestinationType.GetFields(Flags);
 
         for (int i =  0; i < DestinationFields.Length; i++)
         {
             FieldInfo SourceField = SourceFields[i];
             FieldInfo DestinationField = DestinationFields[i];
 
+            if (SourceField.Name.EndsWith("__BackingField", StringComparison.Ordinal))
+                continue;
+
             Type FieldType = SourceField.FieldType;
             object? FieldValue = SourceField.GetValue(obj);
 
             if (TryClone(FieldValue, out object? CloneValue))
-                DestinationField.SetValue(clone, FieldValue);
+                DestinationField.SetValue(clone, CloneValue);
             else
                 return false;
         }

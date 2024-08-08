@@ -83,7 +83,6 @@ internal static class ParentAppDomainRunner
         weakRef = new WeakReference(domain, trackResurrection: true);
 
 #if NET8_0_OR_GREATER
-
         domain.Load(methodData.TypeUnderTest.Assembly.Location);
 
         var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);

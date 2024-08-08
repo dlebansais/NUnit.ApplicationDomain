@@ -2,8 +2,20 @@
 
 namespace NUnit.ApplicationDomain.System;
 
-public class AppDomainSetup
+using global::System;
+
+public class AppDomainSetup : MarshalByRefObject
 {
+    internal AppDomainSetup()
+    {
+    }
+
+    public AppDomainSetup(string? applicationBase, string? configurationFile)
+    {
+        ApplicationBase = applicationBase;
+        ConfigurationFile = configurationFile;
+    }
+
     public string? ApplicationBase { get; set; }
     public string? ConfigurationFile { get; set; }
 }
