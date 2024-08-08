@@ -1,14 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace NUnit.Framework
 {
-  /// <summary>
-  ///  An object whose properties are stored between a test in the normal app-domain and the test
-  ///  executing in the test-domain.
-  /// </summary>
-  public class SharedDataStore : MarshalByRefObject
+    /// <summary>
+    ///  An object whose properties are stored between a test in the normal app-domain and the test
+    ///  executing in the test-domain.
+    /// </summary>
+    public class SharedDataStore : MarshalByRefObject
   {
     private readonly Dictionary<string, object?> _lookup
       = new Dictionary<string, object?>();
@@ -54,5 +54,7 @@ namespace NUnit.Framework
     {
       _lookup[key] = value;
     }
+
+        public ICollection Keys => _lookup.Keys;
   }
 }

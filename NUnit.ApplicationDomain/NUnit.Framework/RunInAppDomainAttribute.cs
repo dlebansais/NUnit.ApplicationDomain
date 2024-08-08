@@ -43,9 +43,12 @@ public class RunInApplicationDomainAttribute : TestActionAttribute
 
         if (AppDomainRunner.ShouldIncludeAppDomainErrorMessages)
         {
-            if (exception is SuccessException)
+            // Compare names because the exception is coming from a different AppDomain.
+            if (exception.GetType().FullName == typeof(SuccessException).FullName)
             {
-                // don't output anything in case of success
+                // Don't output anything in case of success.
+                // Just throw a copy of the original exception.
+                throw new SuccessException(exception.Message);
             }
             else if (exception is AssertionException)
             {

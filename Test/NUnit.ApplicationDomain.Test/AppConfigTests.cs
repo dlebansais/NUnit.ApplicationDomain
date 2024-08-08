@@ -1,4 +1,6 @@
-﻿using System;
+﻿// We don't try to support this in .NET 8
+#if !NET8_0_OR_GREATER
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -17,3 +19,4 @@ namespace NUnit.ApplicationDomain.Tests
     }
   }
 }
+#endif

@@ -36,15 +36,15 @@ namespace NUnit.ApplicationDomain.Tests
     public void SetSerialiableValueInTest_Works()
     {
       AppDomainRunner.DataStore.Set(StringKey, StringValue);
-    }
+        }
 
-    [TearDown]
+        [TearDown]
     public void GetSerialiableValueInTest_Works()
     {
-      var actualStringValue = AppDomainRunner.DataStore.Get<string>(StringKey);
-      Assert.That(actualStringValue, Is.EqualTo(StringValue));
+            var actualStringValue = AppDomainRunner.DataStore.Get<string>(StringKey);
+            Assert.That(actualStringValue, Is.EqualTo(StringValue));
+        }
     }
-  }
 
   internal class SharedDataStoreFlowTests3
   {

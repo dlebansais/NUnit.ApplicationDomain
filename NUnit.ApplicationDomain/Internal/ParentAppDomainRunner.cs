@@ -94,6 +94,18 @@ internal static class ParentAppDomainRunner
 
         // Store any resulting exception from executing the test method
         var possibleException = executeMethod?.Invoke(inDomainRunner, new object?[] { CloneMethodData! }) as Exception;
+
+        if (methodData.DataStore is object DataStore)
+        {
+            Dictionary<string, object?> Lookup = (Dictionary<string, object?>)DataStore.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(DataStore)!;
+
+            object ClonedDataStore = CloneMethodData!.GetType().GetProperty("DataStore")!.GetValue(CloneMethodData)!;
+            Dictionary<string, object?> ClonedLookup = (Dictionary<string, object?>)ClonedDataStore.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ClonedDataStore)!;
+
+            Lookup.Clear();
+            foreach (string Key in ClonedLookup.Keys)
+                Lookup.Add(Key, ClonedLookup[Key]);
+        }
 #else
       domain.Load(methodData.TypeUnderTest.Assembly.GetName());
 
