@@ -8,8 +8,11 @@ using global::System.Collections.Generic;
 using global::System.Linq;
 using global::System.Reflection;
 using global::System.Runtime.Loader;
+using global::System.Runtime.Serialization.Formatters.Binary;
+using global::System.Text.Json;
 using NUnit.ApplicationDomain.System.Security;
 using NUnit.ApplicationDomain.System.Security.Policy;
+using NUnit.Framework.Constraints;
 
 public class AppDomain : IDisposable
 {
@@ -48,7 +51,7 @@ public class AppDomain : IDisposable
     private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
         Info = info;
-        Context = new AssemblyLoadContext($"#{DomainCount}", isCollectible: true);
+        Context = new AppDomainAssemblyLoadContext($"#{DomainCount}", GetType().Assembly.Location);
         DomainCount++;
 
         RegisteredDomains.Add(Context, this);
@@ -109,6 +112,9 @@ public class AppDomain : IDisposable
 
     public void Dispose()
     {
+        Context.Resolving -= OnResolving;
+        RegisteredDomains.Remove(Context);
+
         Context.Unload();
     }
 
@@ -255,6 +261,20 @@ public class AppDomain : IDisposable
             {
                 clone = CloneObjType;
                 return true;
+            }
+        }
+        else if (Attribute.IsDefined(ObjType, typeof(SerializableAttribute)))
+        {
+            if (TryGetTypeInDomain(ObjType, out Type? CloneDictionaryType))
+            {
+                string JSonString = JsonSerializer.Serialize(obj);
+                object? DeserializedObj = JsonSerializer.Deserialize(JSonString, CloneDictionaryType!);
+
+                if (DeserializedObj is not null)
+                {
+                    clone = DeserializedObj;
+                    return true;
+                }
             }
         }
 

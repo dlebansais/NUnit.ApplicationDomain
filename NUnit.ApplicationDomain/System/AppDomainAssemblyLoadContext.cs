@@ -7,7 +7,7 @@ using global::System.Runtime.Loader;
 
 public class AppDomainAssemblyLoadContext : AssemblyLoadContext
 {
-    public AppDomainAssemblyLoadContext(string mainAssemblyToLoadPath) : base(isCollectible: true)
+    public AppDomainAssemblyLoadContext(string name, string mainAssemblyToLoadPath) : base(name, isCollectible: true)
     {
         Resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath);
     }

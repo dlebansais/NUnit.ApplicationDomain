@@ -4,6 +4,7 @@ using global::System;
 using global::System.Collections.Concurrent;
 using global::System.Collections.Generic;
 using global::System.Reflection;
+using global::System.Runtime.CompilerServices;
 using global::System.Security;
 using global::System.Security.Permissions;
 using NUnit.Framework;
@@ -58,6 +59,20 @@ internal static class ParentAppDomainRunner
                                                    testArguments,
                                                    testFixtureArguments);
 
+        var possibleException = RunInternal(appDomainFactory, methodData, out WeakReference weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        return possibleException;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Exception? RunInternal(IAppDomainFactory appDomainFactory, TestMethodInformation methodData, out WeakReference weakRef)
+    {
         var domainInfo = appDomainFactory.GetAppDomainFor(methodData);
         AppDomain domain = domainInfo.AppDomain;
 
@@ -65,7 +80,10 @@ internal static class ParentAppDomainRunner
         InDomainAssemblyResolver assemblyResolver = new InDomainAssemblyResolver(new ResolveHelper());
         domain.AssemblyResolve += assemblyResolver.ResolveEventHandler;
 
+        weakRef = new WeakReference(domain, trackResurrection: true);
+
 #if NET8_0_OR_GREATER
+
         domain.Load(methodData.TypeUnderTest.Assembly.Location);
 
         var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);

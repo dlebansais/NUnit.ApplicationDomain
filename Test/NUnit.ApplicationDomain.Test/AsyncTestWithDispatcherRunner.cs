@@ -26,12 +26,11 @@ internal class AsyncTestWithDispatcherRunner : IAsyncTestResultHandler
     [Test]
     public async Task WaitsForDispatcherToContinue()
     {
+        // Create a dispatcher if none yet.
+        _ = Dispatcher.CurrentDispatcher;
+
         // pretend that for some made-up reason, we need to be in the event loop 
-#if NET8_0_OR_GREATER
         await Dispatcher.Yield();
-#else
-        await Dispatcher.Yield();
-#endif
 
         // and pretend that something later triggers that allows us to complete
         await Task.Delay(TimeSpan.FromSeconds(3));
