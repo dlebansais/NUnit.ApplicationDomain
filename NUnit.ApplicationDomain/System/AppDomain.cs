@@ -3,7 +3,9 @@
 namespace NUnit.ApplicationDomain.System;
 
 using global::System;
+using global::System.Collections;
 using global::System.Collections.Generic;
+using global::System.Linq;
 using global::System.Reflection;
 using global::System.Runtime.Loader;
 using NUnit.ApplicationDomain.System.Security;
@@ -115,11 +117,6 @@ public class AppDomain : IDisposable
         return RaiseAssemblyResolve(assemblyRef.FullName);
     }
 
-    public void PrintContextName()
-    {
-        // Console.WriteLine($"** Current context is {Context.Name}");
-    }
-
     public static string GetLoadContext(Assembly assembly)
     {
         if (assembly.ReflectionOnly)
@@ -132,6 +129,339 @@ public class AppDomain : IDisposable
             return "default context";
         else
             return "some context";
+    }
+
+    public bool TryClone(object? obj, out object? clone)
+    {
+        clone = null;
+
+        if (obj == null)
+            return true;
+
+        Type ObjType = obj.GetType();
+
+        if (ObjType.IsPrimitive)
+        {
+            clone = obj;
+            return true;
+        }
+        else if (ObjType == typeof(string))
+        {
+            clone = obj;
+            return true;
+        }
+        else if (ObjType.IsAssignableTo(typeof(MarshalByRefObject)))
+        {
+            MarshalByRefObject ObjValue = (MarshalByRefObject)obj;
+            if (TryClone(ObjValue, out MarshalByRefObject? CloneValue))
+            {
+                clone = CloneValue;
+                return true;
+            }
+        }
+        else if (ObjType.IsArray)
+        {
+            if (TryGetTypeInDomain(ObjType, out Type? CloneListType))
+            {
+                if (TryCreateEmptyInstance(CloneListType!, obj, out clone))
+                {
+                    Array ListFieldValue = (Array)obj;
+                    Array CloneListFieldValue = (Array)clone!;
+
+                    for (int i = 0; i < ListFieldValue.Length; i++)
+                    {
+                        if (TryClone(ListFieldValue.GetValue(i), out object? CloneItem))
+                            CloneListFieldValue.SetValue(CloneItem, i);
+                        else
+                            break;
+                    }
+
+                    if (CloneListFieldValue.Length == ListFieldValue.Length)
+                    {
+                        clone = CloneListFieldValue;
+                        return true;
+                    }
+                }
+            }
+        }
+        else if (ObjType.IsAssignableTo(typeof(IList)))
+        {
+            if (TryGetTypeInDomain(ObjType, out Type? CloneListType))
+            {
+                if (TryCreateEmptyInstance(CloneListType!, obj, out clone))
+                {
+                    IList ListFieldValue = (IList)obj;
+                    IList CloneListFieldValue = (IList)clone!;
+
+                    foreach (object Item in ListFieldValue)
+                        if (TryClone(Item, out object? CloneItem))
+                            CloneListFieldValue.Add(CloneItem);
+                        else
+                            break;
+
+                    if (CloneListFieldValue.Count == ListFieldValue.Count)
+                    {
+                        clone = CloneListFieldValue;
+                        return true;
+                    }
+                }
+            }
+        }
+        else if (ObjType.IsAssignableTo(typeof(IDictionary)))
+        {
+            if (TryGetTypeInDomain(ObjType, out Type? CloneDictionaryType))
+            {
+                if (TryCreateEmptyInstance(CloneDictionaryType!, obj, out clone))
+                {
+                    IDictionary DictionaryFieldValue = (IDictionary)obj;
+                    IDictionary CloneDictionaryFieldValue = (IDictionary)clone!;
+
+                    foreach (object Key in DictionaryFieldValue.Keys)
+                        if (TryClone(Key, out object? CloneKey) && TryClone(DictionaryFieldValue[Key], out object? CloneValue))
+                            CloneDictionaryFieldValue.Add(CloneKey!, CloneValue);
+                        else
+                            break;
+
+                    if (CloneDictionaryFieldValue.Count == DictionaryFieldValue.Count)
+                    {
+                        clone = CloneDictionaryFieldValue;
+                        return true;
+                    }
+                }
+            }
+        }
+        else if (ObjType.IsAssignableTo(typeof(MethodInfo)))
+        {
+            MethodInfo ObjMethod = (MethodInfo)obj;
+            Type DeclaringType = ObjMethod.DeclaringType!;
+            var Context = AssemblyLoadContext.GetLoadContext(DeclaringType.Assembly);
+            
+            if (TryGetTypeInDomain(DeclaringType, out Type? CloneDeclaringType))
+            {
+                var CloneContext = AssemblyLoadContext.GetLoadContext(CloneDeclaringType!.Assembly);
+                MethodInfo[] ClonedMethods = CloneDeclaringType.GetMethods();
+
+                foreach (MethodInfo Method in ClonedMethods)
+                    if (Method.Name == ObjMethod.Name)
+                    {
+                        clone = Method;
+                        return true;
+                    }
+            }
+        }
+        else if (ObjType.IsAssignableTo(typeof(Type)))
+        {
+            if (TryGetTypeInDomain((Type)obj, out Type? CloneObjType))
+            {
+                clone = CloneObjType;
+                return true;
+            }
+        }
+
+        clone = null;
+        return false;
+    }
+
+    public bool TryClone(MarshalByRefObject obj, out MarshalByRefObject? clone)
+    {
+        clone = null;
+
+        Type SourceType = obj.GetType();
+        FieldInfo[] SourceFields = SourceType.GetFields();
+
+        if (!TryCreateEmptyInstance(SourceType, obj, out object? Instance))
+            return false;
+
+        clone = (MarshalByRefObject)Instance!;
+        Type DestinationType = clone.GetType();
+        FieldInfo[] DestinationFields = DestinationType.GetFields();
+
+        for (int i =  0; i < DestinationFields.Length; i++)
+        {
+            FieldInfo SourceField = SourceFields[i];
+            FieldInfo DestinationField = DestinationFields[i];
+
+            Type FieldType = SourceField.FieldType;
+            object? FieldValue = SourceField.GetValue(obj);
+
+            if (TryClone(FieldValue, out object? CloneValue))
+                DestinationField.SetValue(clone, FieldValue);
+            else
+                return false;
+        }
+
+        return true;
+    }
+
+    public bool TryGetTypeInDomain(Type type, out Type? typeInDomain)
+    {
+        if (type.IsPrimitive)
+        {
+            typeInDomain = type;
+            return true;
+        }
+        else if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            if (TryGetTypeInDomain(type.GetGenericTypeDefinition(), out Type? CloneGenericTypeDefinition))
+            {
+                Type[] GenericArguments = type.GetGenericArguments();
+                List<Type> CloneGenericArguments = new();
+
+                for (int i = 0; i < GenericArguments.Length; i++)
+                    if (TryGetTypeInDomain(GenericArguments[i], out Type? ArgumentType))
+                        CloneGenericArguments.Add(ArgumentType!);
+
+                if (CloneGenericArguments.Count == GenericArguments.Length)
+                {
+                    typeInDomain = CloneGenericTypeDefinition!.MakeGenericType(CloneGenericArguments.ToArray());
+                    return true;
+                }
+            }
+        }
+        else if (type.IsArray)
+        {
+            if (TryGetTypeInDomain(type.GetElementType()!, out Type? ElementTypeInDomain))
+            {
+                typeInDomain = ElementTypeInDomain!.MakeArrayType();
+                return true;
+            }
+        }
+        else
+        {
+            string AssemblyLocation = type.Assembly.Location;
+            string TypeFullName = type.FullName!;
+
+            Assembly AssemblyInDomain;
+
+            try
+            {
+                string SystemAssemblyLocation = typeof(IList).Assembly.Location;
+
+                if (AssemblyLocation == SystemAssemblyLocation)
+                    AssemblyInDomain = type.Assembly;
+                else
+                    AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
+
+                typeInDomain = AssemblyInDomain.GetType(TypeFullName)!;
+                return true;
+            }
+            catch
+            {
+            }
+        }
+
+        typeInDomain = null;
+        return false;
+    }
+
+    private bool TryCreateEmptyInstance(Type type, object source, out object? instance)
+    {
+        if (type.IsArray)
+        {
+            Array SourceArray = (Array)source;
+            instance = Array.CreateInstance(type.GetElementType()!, SourceArray.Length);
+            return true;
+        }
+
+        string AssemblyLocation = type.Assembly.Location;
+        string TypeFullName = type.FullName!;
+
+        if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object[] Args))
+        {
+            Assembly AssemblyInDomain;
+
+            try
+            {
+                string SystemAssemblyLocation = typeof(IList).Assembly.Location;
+
+                if (AssemblyLocation == SystemAssemblyLocation)
+                    AssemblyInDomain = type.Assembly;
+                else
+                    AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
+
+                BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
+                object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
+
+                if (createdInstance is not null)
+                {
+                    instance = createdInstance;
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        instance = null;
+        return false;
+    }
+
+    private bool FindContructorAndArgs(Type type, object source, out bool usePublicConstructor, out object[] args)
+    {
+        if (FindContructorAndArgs(type, BindingFlags.Public, source, out args))
+        {
+            usePublicConstructor = true;
+            return true;
+        }
+
+        usePublicConstructor = false;
+
+        if (FindContructorAndArgs(type, BindingFlags.NonPublic, source, out args))
+            return true;
+
+        return false;
+    }
+
+    private bool FindContructorAndArgs(Type type, BindingFlags publicFlag, object source, out object[] args)
+    {
+        args = Array.Empty<object>();
+
+        List<ConstructorInfo> Constructors = type.GetConstructors(BindingFlags.Instance | publicFlag).ToList();
+        Constructors.Sort(ByParameterCountAscending);
+
+        foreach (ConstructorInfo Constructor in Constructors)
+        {
+            ParameterInfo[] Parameters = Constructor.GetParameters();
+            List<PropertyInfo> Properties = new();
+
+            foreach (ParameterInfo Parameter in Parameters)
+            {
+                if (Parameter.Name is string ParameterName)
+                {
+                    string AssociatedPropertyName = ParameterName.ToUpper();
+                    if (type.GetProperty(AssociatedPropertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) is PropertyInfo Property)
+                        Properties.Add(Property);
+                    else if (type.GetProperty(AssociatedPropertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase) is PropertyInfo NonPublicProperty)
+                        Properties.Add(NonPublicProperty);
+                }
+            }
+
+            if (Properties.Count == Parameters.Length)
+            {
+                List<object> Args = new();
+
+                for (int i = 0; i < Properties.Count; i++)
+                {
+                    PropertyInfo Property = Properties[i];
+                    if (TryClone(Property.GetValue(source), out object? ClonedProperty))
+                        Args.Add(ClonedProperty!);
+                }
+
+                if (Args.Count == Parameters.Length)
+                {
+                    args = Args.ToArray();
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static int ByParameterCountAscending(ConstructorInfo c1, ConstructorInfo c2)
+    {
+        return c1.GetParameters().Length - c2.GetParameters().Length;
     }
 
     public event ResolveEventHandler? AssemblyResolve;

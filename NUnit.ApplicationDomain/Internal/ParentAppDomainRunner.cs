@@ -70,50 +70,13 @@ internal static class ParentAppDomainRunner
 
         var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);
 
-        object[] args0 = new object[]
-        {
-            setupAndTeardown.SetupMethods,
-            setupAndTeardown.TeardownMethods,
-        };
-
-        object? result0 = domain.CreateInstanceAndUnwrap(typeof(SetupAndTeardownMethods).Assembly.Location, typeof(SetupAndTeardownMethods).FullName!, true, args0);
-
-        object? result3 = domain.CreateInstanceAndUnwrap(typeof(SharedDataStore).Assembly.Location, typeof(SharedDataStore).FullName!, true);
-
-        Dictionary<string, object?> lookup = (Dictionary<string, object?>)AppDomainRunner.DataStore!.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(AppDomainRunner.DataStore!)!;
-        Dictionary<string, object?> cloneLookup = (Dictionary<string, object?>)result3!.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(result3)!;
-
-        foreach (KeyValuePair<string, object?> entry in lookup)
-            cloneLookup.Add(entry.Key, entry.Value);
-
-        object? result4 = domain.CreateInstanceAndUnwrap(typeInfo.Type.Assembly.Location, typeInfo.Type.FullName!, true);
-
-        MethodInfo[] methods = result4!.GetType().GetMethods();
-        MethodInfo? clonedTestMethod = null;
-
-        foreach(MethodInfo method in methods)
-            if (method.Name == test.Method!.MethodInfo.Name)
-        {
-                clonedTestMethod = method;
-                break;
-        }
-
-        object[] args1 = new object[]
-        {
-            result4?.GetType()!,
-            clonedTestMethod!,
-            result0!,
-            result3!,
-            testArguments,
-            testFixtureArguments!,
-        };
-
-        object? result1 = domain.CreateInstanceAndUnwrap<TestMethodInformation>(usePublicConstructor: false, args1);
+        if (!domain.TryClone(methodData, out object? CloneMethodData))
+            throw new InvalidOperationException();
 
         MethodInfo? executeMethod = inDomainRunner?.GetType().GetMethod("Execute");
 
         // Store any resulting exception from executing the test method
-        var possibleException = executeMethod?.Invoke(inDomainRunner, new object?[] { result1! }) as Exception;
+        var possibleException = executeMethod?.Invoke(inDomainRunner, new object?[] { CloneMethodData! }) as Exception;
 #else
       domain.Load(methodData.TypeUnderTest.Assembly.GetName());
 
