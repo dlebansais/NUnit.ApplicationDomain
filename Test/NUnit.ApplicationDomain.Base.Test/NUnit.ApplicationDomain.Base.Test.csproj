@@ -4,6 +4,7 @@
         <TargetFrameworks>net481;net8.0</TargetFrameworks>
         <Nullable>enable</Nullable>
         <LangVersion>12</LangVersion>
+        <Platforms>x64</Platforms>
 
     </PropertyGroup>
 
