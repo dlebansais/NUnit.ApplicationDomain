@@ -1,15 +1,15 @@
-﻿using System;
+﻿namespace NUnit.Framework;
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace NUnit.Framework
+/// <summary>
+///  An object whose properties are stored between a test in the normal app-domain and the test
+///  executing in the test-domain.
+/// </summary>
+internal class SharedDataStore : MarshalByRefObject
 {
-    /// <summary>
-    ///  An object whose properties are stored between a test in the normal app-domain and the test
-    ///  executing in the test-domain.
-    /// </summary>
-    public class SharedDataStore : MarshalByRefObject
-  {
     private readonly Dictionary<string, object?> _lookup
       = new Dictionary<string, object?>();
 
@@ -19,7 +19,7 @@ namespace NUnit.Framework
     /// <returns> An object. </returns>
     public T? Get<T>(string key)
     {
-      return (T?)_lookup[key];
+        return (T?)_lookup[key];
     }
 
     /// <summary> Attempts to get the given item. </summary>
@@ -32,15 +32,15 @@ namespace NUnit.Framework
     /// </returns>
     public bool TryGet<T>(string key, out T? value)
     {
-      object? raw;
-      if (_lookup.TryGetValue(key, out raw))
-      {
-        value = (T?)raw;
-        return true;
-      }
+        object? raw;
+        if (_lookup.TryGetValue(key, out raw))
+        {
+            value = (T?)raw;
+            return true;
+        }
 
-      value = default(T);
-      return false;
+        value = default(T);
+        return false;
     }
 
     /// <summary> Sets the given value for the given key. </summary>
@@ -52,9 +52,8 @@ namespace NUnit.Framework
     ///  in the test-appdomain, must derive from MarshalByRefObject). </param>
     public void Set<T>(string key, T? value)
     {
-      _lookup[key] = value;
+        _lookup[key] = value;
     }
 
-        public ICollection Keys => _lookup.Keys;
-  }
+    public ICollection Keys => _lookup.Keys;
 }

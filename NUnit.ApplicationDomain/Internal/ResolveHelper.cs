@@ -9,7 +9,7 @@ using global::System.Reflection;
 ///  The methods are invoked and marshaled from the test app domain into the original domain.
 /// </remarks>
 [Serializable]
-internal class ResolveHelper : MarshalByRefObject
+internal sealed class ResolveHelper : MarshalByRefObject
 {
     public static string? ResolveLocationOfAssembly(string assemblyName)
     {

@@ -14,7 +14,7 @@ using PermissionState = System.Security.Permissions.PermissionState;
 ///  A default app-domain factory that simply constructs a new app-domain before the test and
 ///  tears it down after every test.
 /// </summary>
-public partial class PerTestAppDomainFactory : IAppDomainFactory
+internal partial class PerTestAppDomainFactory : IAppDomainFactory
 {
     /// <inheritdoc />
     [Access("public", "virtual")]

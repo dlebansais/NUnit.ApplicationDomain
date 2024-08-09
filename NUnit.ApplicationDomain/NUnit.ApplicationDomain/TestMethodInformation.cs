@@ -8,7 +8,7 @@ using NUnit.ApplicationDomain.Internal;
 using NUnit.Framework;
 
 /// <summary> All of the arguments for the TestExecutor. </summary>
-public class TestMethodInformation : MarshalByRefObject
+internal class TestMethodInformation : MarshalByRefObject
 {
     /// <summary> Constructor. </summary>
     /// <exception cref="ArgumentNullException"> When one or more required arguments are null. </exception>

@@ -7,7 +7,7 @@ using AppDomain = System.AppDomain;
 using AppDomainSetup = System.AppDomainSetup;
 #endif
 
-public class FactoryTests
+internal class FactoryTests
 {
     [Test, RunInApplicationDomain(AppDomainFactory = typeof(AppDomainFactoryImplementation))]
     public void VerifyFactoryIsInvoked()

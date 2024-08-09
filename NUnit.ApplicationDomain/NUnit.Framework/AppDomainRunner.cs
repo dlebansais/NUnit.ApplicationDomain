@@ -4,7 +4,7 @@
 using System;
 using NUnit.Framework.Internal;
 
-public static class AppDomainRunner
+internal static class AppDomainRunner
 {
     /// <summary> The name of the app-domain in which tests are run. </summary>
     public const string TestAppDomainName

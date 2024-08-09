@@ -8,7 +8,9 @@ using NUnit.Framework;
 
 /// <summary> Executes a test method in the application domain. </summary>
 /// <returns> Runs in the test app domain. </returns>
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes: instanciated with a call to CreateInstanceAndUnwrap.
 internal sealed class InDomainTestMethodRunner : MarshalByRefObject
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     /// <summary>
     /// Gets the last exception that occurred as a result of executing <see cref="Execute(TestMethodInformation)"/>

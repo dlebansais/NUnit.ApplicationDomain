@@ -5,7 +5,7 @@ namespace NUnit.ApplicationDomain.System;
 using global::System.Reflection;
 using global::System.Runtime.Loader;
 
-public class AppDomainAssemblyLoadContext : AssemblyLoadContext
+internal class AppDomainAssemblyLoadContext : AssemblyLoadContext
 {
     public AppDomainAssemblyLoadContext(string name, string mainAssemblyToLoadPath) : base(name, isCollectible: true)
     {

@@ -4,9 +4,7 @@ using global::System;
 using global::System.Collections.Generic;
 using global::System.Linq;
 using global::System.Reflection;
-#if NET8_0_OR_GREATER
 using AppDomain = System.AppDomain;
-#endif
 
 /// <summary> Utility methods. </summary>
 internal static class Utils

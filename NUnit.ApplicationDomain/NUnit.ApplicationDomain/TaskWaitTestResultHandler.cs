@@ -7,7 +7,7 @@ using global::System.Threading.Tasks;
 ///  A <see cref="IAsyncTestResultHandler"/> that simply invokes <see cref="Task.Wait()"/> on the
 ///  result of a task-returning test.
 /// </summary>
-public partial class TaskWaitTestResultHandler : IAsyncTestResultHandler
+internal partial class TaskWaitTestResultHandler : IAsyncTestResultHandler
 {
     /// <inheritdoc />
     [Access("public")]

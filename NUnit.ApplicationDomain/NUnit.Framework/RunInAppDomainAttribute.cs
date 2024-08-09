@@ -4,9 +4,7 @@ using global::System;
 using NUnit.ApplicationDomain;
 using NUnit.ApplicationDomain.Internal;
 using NUnit.Framework.Interfaces;
-#if NET8_0_OR_GREATER
 using AppDomain = System.AppDomain;
-#endif
 
 /// <summary> Indicates that a test should be run in a separate application domain. </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]

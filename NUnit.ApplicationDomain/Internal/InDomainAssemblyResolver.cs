@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
+﻿namespace NUnit.ApplicationDomain.Internal;
 
-namespace NUnit.ApplicationDomain.Internal
+using global::System;
+using global::System.Collections.Generic;
+using global::System.Diagnostics;
+using global::System.Reflection;
+
+/// <summary>
+///  Resolves assemblies by delegating to the parent app domain for assembly locations.
+/// </summary>
+/// <remarks> Runs in the test app domain. </remarks>
+[Serializable]
+internal sealed class InDomainAssemblyResolver
 {
-  /// <summary>
-  ///  Resolves assemblies by delegating to the parent app domain for assembly locations.
-  /// </summary>
-  /// <remarks> Runs in the test app domain. </remarks>
-  [Serializable]
-  internal class InDomainAssemblyResolver
-  {
     private readonly Dictionary<string, Assembly?> _resolvedAssemblies;
     private readonly ResolveHelper _resolveHelper;
 
@@ -27,37 +26,36 @@ namespace NUnit.ApplicationDomain.Internal
     /// <param name="resolveHelper"> The resolve helper from the parent app domain. </param>
     public InDomainAssemblyResolver(ResolveHelper resolveHelper)
     {
-      _resolvedAssemblies = new Dictionary<string, Assembly?>();
+        _resolvedAssemblies = new Dictionary<string, Assembly?>();
 
-      // Create the resolve helper in the parent appdomain.
-      // The parent appdomain might know or can load the assembly, so ask it indirectly via ResolveHelper.
-      _resolveHelper = resolveHelper;
+        // Create the resolve helper in the parent appdomain.
+        // The parent appdomain might know or can load the assembly, so ask it indirectly via ResolveHelper.
+        _resolveHelper = resolveHelper;
     }
 
     /// <inheritdoc />
     public Assembly? ResolveEventHandler(object? sender, ResolveEventArgs args)
     {
-      Assembly? assembly;
-      if (_resolvedAssemblies.TryGetValue(args.Name, out assembly))
-      {
-        return assembly;
-      }
+        Assembly? assembly;
+        if (_resolvedAssemblies.TryGetValue(args.Name, out assembly))
+        {
+            return assembly;
+        }
 
-      // Not yet known => Store null in the dictionary (helps against stack overflow if a recursive call happens).
-      _resolvedAssemblies[args.Name] = null;
+        // Not yet known => Store null in the dictionary (helps against stack overflow if a recursive call happens).
+        _resolvedAssemblies[args.Name] = null;
 
-      var assemblyLocation = ResolveHelper.ResolveLocationOfAssembly(args.Name);
-      if (!String.IsNullOrEmpty(assemblyLocation))
-      {
-        // The resolve helper found the assembly.
-        assembly = Assembly.LoadFrom(assemblyLocation);
-        _resolvedAssemblies[args.Name] = assembly;
-        return assembly;
-      }
+        var assemblyLocation = ResolveHelper.ResolveLocationOfAssembly(args.Name);
+        if (!String.IsNullOrEmpty(assemblyLocation))
+        {
+            // The resolve helper found the assembly.
+            assembly = Assembly.LoadFrom(assemblyLocation);
+            _resolvedAssemblies[args.Name] = assembly;
+            return assembly;
+        }
 
-      Debug.WriteLine($"Unknown assembly to be loaded: '{args.Name}', requested by '{args.RequestingAssembly}'");
+        Debug.WriteLine($"Unknown assembly to be loaded: '{args.Name}', requested by '{args.RequestingAssembly}'");
 
-      return null;
+        return null;
     }
-  }
 }

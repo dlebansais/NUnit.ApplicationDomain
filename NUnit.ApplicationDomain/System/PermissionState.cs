@@ -2,7 +2,7 @@
 
 namespace NUnit.ApplicationDomain.System.Security.Permissions;
 
-public enum PermissionState
+internal enum PermissionState
 {
     None = 0,
     Unrestricted = 1,

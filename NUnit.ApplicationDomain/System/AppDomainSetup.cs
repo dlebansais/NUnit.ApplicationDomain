@@ -4,7 +4,7 @@ namespace NUnit.ApplicationDomain.System;
 
 using global::System;
 
-public class AppDomainSetup : MarshalByRefObject
+internal class AppDomainSetup : MarshalByRefObject
 {
     internal AppDomainSetup()
     {

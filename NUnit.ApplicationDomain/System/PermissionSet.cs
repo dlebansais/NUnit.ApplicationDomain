@@ -4,7 +4,7 @@ namespace NUnit.ApplicationDomain.System.Security;
 
 using System.Security.Permissions;
 
-public class PermissionSet
+internal class PermissionSet
 {
     public PermissionSet(PermissionState state)
     {

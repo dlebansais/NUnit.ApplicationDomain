@@ -1,14 +1,12 @@
 ﻿namespace NUnit.ApplicationDomain;
 
 using global::System;
-#if NET8_0_OR_GREATER
 using AppDomain = System.AppDomain;
-#endif
 
 /// <summary>
 ///  Information about an app-domain constructed from an <see cref="IAppDomainFactory"/>.
 /// </summary>
-public class ConstructedAppDomainInformation
+internal class ConstructedAppDomainInformation
 {
     /// <summary> Constructor. </summary>
     /// <exception cref="ArgumentNullException"> Thrown when one or more required arguments are null. </exception>
@@ -16,11 +14,11 @@ public class ConstructedAppDomainInformation
     /// <param name="appDomain"> The app domain to use for the test context. </param>
     public ConstructedAppDomainInformation(IAppDomainFactory owner, AppDomain appDomain)
     {
-      if (owner == null)
-        throw new ArgumentNullException(nameof(owner));
+        if (owner == null)
+            throw new ArgumentNullException(nameof(owner));
 
-      Owner = owner;
-      AppDomain = appDomain;
+        Owner = owner;
+        AppDomain = appDomain;
     }
 
     /// <summary> The factory that constructed this instance. </summary>

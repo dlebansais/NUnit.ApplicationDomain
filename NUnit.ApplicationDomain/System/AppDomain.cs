@@ -12,7 +12,7 @@ using global::System.Text.Json;
 using NUnit.ApplicationDomain.System.Security;
 using NUnit.ApplicationDomain.System.Security.Policy;
 
-public class AppDomain : MarshalByRefObject, IDisposable
+internal class AppDomain : MarshalByRefObject, IDisposable
 {
     private static Dictionary<AssemblyLoadContext, object> RegisteredDomains
     {
@@ -72,7 +72,7 @@ public class AppDomain : MarshalByRefObject, IDisposable
     private AppDomainSetup Info;
     private AssemblyLoadContext Context;
 
-    public Dictionary<string, object?> Data { get; set; } = new();
+    private Dictionary<string, object?> Data { get; } = new();
 
     internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
@@ -100,7 +100,7 @@ public class AppDomain : MarshalByRefObject, IDisposable
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
         {
-            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data")?.GetValue(Value)!;
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(Value)!;
             if (DomainData.TryGetValue(name, out var data))
                 return data;
             else
@@ -114,7 +114,7 @@ public class AppDomain : MarshalByRefObject, IDisposable
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
         {
-            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data")?.GetValue(Value)!;
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(Value)!;
             if (DomainData.ContainsKey(name))
                 DomainData[name] = data;
             else
@@ -510,6 +510,8 @@ public class AppDomain : MarshalByRefObject, IDisposable
         return c1.GetParameters().Length - c2.GetParameters().Length;
     }
 
+#pragma warning disable CA1003 // Use generic event handler instances: Cannot be fixed.
     public event ResolveEventHandler? AssemblyResolve;
+#pragma warning restore CA1003 // Use generic event handler instances
 }
 #endif
