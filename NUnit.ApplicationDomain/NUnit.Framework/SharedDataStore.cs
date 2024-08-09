@@ -8,7 +8,7 @@ using System.Collections.Generic;
 ///  An object whose properties are stored between a test in the normal app-domain and the test
 ///  executing in the test-domain.
 /// </summary>
-internal class SharedDataStore : MarshalByRefObject
+public class SharedDataStore : MarshalByRefObject
 {
     private readonly Dictionary<string, object?> lookup
       = new Dictionary<string, object?>();

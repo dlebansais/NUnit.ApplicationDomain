@@ -6,7 +6,7 @@ using NUnit.Framework.Internal;
 /// <summary>
 /// Helps to run a test in another application domain.
 /// </summary>
-internal static class AppDomainRunner
+public static class AppDomainRunner
 {
     /// <summary> The name of the app-domain in which tests are run. </summary>
     public const string TestAppDomainName
@@ -24,7 +24,7 @@ internal static class AppDomainRunner
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the current test is being executed in an application domain created by the <see cref="RunInApplicationDomainAttribute"/>.
+    /// Gets a value indicating whether the current test is being executed in an application domain created by the <see cref="RunInApplicationDomainAttribute"/>.
     /// </summary>
     public static bool IsInTestAppDomain { get; internal set; }
 
