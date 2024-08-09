@@ -1,6 +1,7 @@
 ﻿namespace NUnit.ApplicationDomain;
 
 using global::System;
+using global::System.Collections.Generic;
 using global::System.IO;
 using global::System.Reflection;
 using NUnit.ApplicationDomain.Internal;
@@ -24,8 +25,8 @@ public class TestMethodInformation : MarshalByRefObject
                                    MethodBase? methodUnderTest,
                                    SetupAndTeardownMethods? methods,
                                    SharedDataStore? dataStore,
-                                   object?[]? arguments,
-                                   object?[]? fixtureArguments)
+                                   IReadOnlyList<object?>? arguments,
+                                   IReadOnlyList<object?>? fixtureArguments)
     {
         if (typeUnderTest == null)
             throw new ArgumentNullException(nameof(typeUnderTest));
@@ -71,12 +72,12 @@ public class TestMethodInformation : MarshalByRefObject
     /// <summary>
     ///  Any additional parameters to give to the test method, normally set via TestCaseAttribute.
     /// </summary>
-    public object?[]? Arguments { get; }
+    public IReadOnlyList<object?>? Arguments { get; }
 
     /// <summary>
     ///  Parameters to give to the test constructor, normally set via TestFixtureAttribute.
     /// </summary>
-    public object?[]? FixtureArguments { get; }
+    public IReadOnlyList<object?>? FixtureArguments { get; }
 
     /// <summary>  The data store to install into the test AppDomain. </summary>
     public SharedDataStore? DataStore { get; set; }

@@ -35,7 +35,7 @@ namespace NUnit.ApplicationDomain.Internal
       }
       else
       {
-        instance = Activator.CreateInstance(typeUnderTest, testMethodInfo.FixtureArguments);
+        instance = Activator.CreateInstance(typeUnderTest, testMethodInfo.FixtureArguments.ToArray());
       }
 
       Exception? exceptionCaught = null;
@@ -57,7 +57,7 @@ namespace NUnit.ApplicationDomain.Internal
           setupMethod.Invoke(instance, null);
         }
 
-        var taskResult = testMethodInfo.MethodUnderTest.Invoke(instance, testMethodInfo.Arguments) as Task;
+        var taskResult = testMethodInfo.MethodUnderTest.Invoke(instance, testMethodInfo.Arguments?.ToArray()) as Task;
         if (taskResult != null)
         {
           var handler = CreateAsyncTestResultHandler(instance);
