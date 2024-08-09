@@ -21,14 +21,14 @@ internal static class Utils
     {
         var methodsFound = new List<MethodInfo>();
 
-        while (typeUnderTest != null)
+        while (typeUnderTest is not null)
         {
             const BindingFlags searchFlags = BindingFlags.DeclaredOnly
                                                 | BindingFlags.Instance
                                                 | BindingFlags.Public
                                                 | BindingFlags.NonPublic;
 
-            // get only methods that do not have any parameters 
+            // get only methods that do not have any parameters
             var methodsOnCurrentType = from method in typeUnderTest.GetMethods(searchFlags)
                                         where method.GetParameters().Length == 0
                                         let attributes = (T[])method.GetCustomAttributes(typeof(T), false)

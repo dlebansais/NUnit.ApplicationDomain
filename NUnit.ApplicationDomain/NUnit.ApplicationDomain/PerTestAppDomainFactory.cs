@@ -24,10 +24,10 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
         var appDomainInfo = new AppDomainSetup
                             {
                             // At a minimum, we want the ability to load the types defined in this assembly
-                            ApplicationBase = GetDirectoryToMyDll()
+                            ApplicationBase = GetDirectoryToMyDll(),
                             };
 
-        if (!String.IsNullOrEmpty(testMethodInfo.AppConfigFile))
+        if (!string.IsNullOrEmpty(testMethodInfo.AppConfigFile))
         {
             appDomainInfo.ConfigurationFile = testMethodInfo.AppConfigFile;
         }
@@ -57,7 +57,7 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     private static void MarkFinishedVerified(ConstructedAppDomainInformation constructedInfo)
     {
         // if we don't unload, it's possible that execution continues in the AppDomain, consuming CPU/
-        // memory.  See more info @ https://bitbucket.org/zastrowm/nunit.applicationdomain/pull-requests/1/ 
+        // memory.  See more info @ https://bitbucket.org/zastrowm/nunit.applicationdomain/pull-requests/1/
         AppDomain.Unload(constructedInfo.AppDomain);
     }
 

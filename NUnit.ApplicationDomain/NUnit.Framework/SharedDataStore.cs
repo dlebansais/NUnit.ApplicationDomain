@@ -10,7 +10,7 @@ using System.Collections.Generic;
 /// </summary>
 internal class SharedDataStore : MarshalByRefObject
 {
-    private readonly Dictionary<string, object?> _lookup
+    private readonly Dictionary<string, object?> lookup
       = new Dictionary<string, object?>();
 
     /// <summary> Gets an object with the given key. </summary>
@@ -19,7 +19,7 @@ internal class SharedDataStore : MarshalByRefObject
     /// <returns> An object. </returns>
     public T? Get<T>(string key)
     {
-        return (T?)_lookup[key];
+        return (T?)lookup[key];
     }
 
     /// <summary> Attempts to get the given item. </summary>
@@ -33,7 +33,7 @@ internal class SharedDataStore : MarshalByRefObject
     public bool TryGet<T>(string key, out T? value)
     {
         object? raw;
-        if (_lookup.TryGetValue(key, out raw))
+        if (lookup.TryGetValue(key, out raw))
         {
             value = (T?)raw;
             return true;
@@ -52,8 +52,8 @@ internal class SharedDataStore : MarshalByRefObject
     ///  in the test-appdomain, must derive from MarshalByRefObject). </param>
     public void Set<T>(string key, T? value)
     {
-        _lookup[key] = value;
+        lookup[key] = value;
     }
 
-    public ICollection Keys => _lookup.Keys;
+    public ICollection Keys => lookup.Keys;
 }

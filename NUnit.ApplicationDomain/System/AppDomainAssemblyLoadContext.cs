@@ -7,7 +7,8 @@ using global::System.Runtime.Loader;
 
 internal class AppDomainAssemblyLoadContext : AssemblyLoadContext
 {
-    public AppDomainAssemblyLoadContext(string name, string mainAssemblyToLoadPath) : base(name, isCollectible: true)
+    public AppDomainAssemblyLoadContext(string name, string mainAssemblyToLoadPath)
+        : base(name, isCollectible: true)
     {
         Resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath);
     }
@@ -15,7 +16,7 @@ internal class AppDomainAssemblyLoadContext : AssemblyLoadContext
     protected override Assembly? Load(AssemblyName name)
     {
         string? assemblyPath = Resolver.ResolveAssemblyToPath(name);
-        if (assemblyPath != null)
+        if (assemblyPath is not null)
         {
             return LoadFromAssemblyPath(assemblyPath);
         }

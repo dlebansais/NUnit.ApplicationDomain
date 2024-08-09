@@ -12,8 +12,8 @@ using global::System.Reflection;
 [Serializable]
 internal sealed class InDomainAssemblyResolver
 {
-    private readonly Dictionary<string, Assembly?> _resolvedAssemblies;
-    private readonly ResolveHelper _resolveHelper;
+    private readonly Dictionary<string, Assembly?> resolvedAssemblies;
+    private readonly ResolveHelper resolveHelper;
 
     /// <summary>
     ///  Creates an assembly resolver for all assemblies which might not be in the same path as the
@@ -26,31 +26,31 @@ internal sealed class InDomainAssemblyResolver
     /// <param name="resolveHelper"> The resolve helper from the parent app domain. </param>
     public InDomainAssemblyResolver(ResolveHelper resolveHelper)
     {
-        _resolvedAssemblies = new Dictionary<string, Assembly?>();
+        resolvedAssemblies = new Dictionary<string, Assembly?>();
 
         // Create the resolve helper in the parent appdomain.
         // The parent appdomain might know or can load the assembly, so ask it indirectly via ResolveHelper.
-        _resolveHelper = resolveHelper;
+        this.resolveHelper = resolveHelper;
     }
 
     /// <inheritdoc />
     public Assembly? ResolveEventHandler(object? sender, ResolveEventArgs args)
     {
         Assembly? assembly;
-        if (_resolvedAssemblies.TryGetValue(args.Name, out assembly))
+        if (resolvedAssemblies.TryGetValue(args.Name, out assembly))
         {
             return assembly;
         }
 
         // Not yet known => Store null in the dictionary (helps against stack overflow if a recursive call happens).
-        _resolvedAssemblies[args.Name] = null;
+        resolvedAssemblies[args.Name] = null;
 
         var assemblyLocation = ResolveHelper.ResolveLocationOfAssembly(args.Name);
-        if (!String.IsNullOrEmpty(assemblyLocation))
+        if (!string.IsNullOrEmpty(assemblyLocation))
         {
             // The resolve helper found the assembly.
             assembly = Assembly.LoadFrom(assemblyLocation);
-            _resolvedAssemblies[args.Name] = assembly;
+            resolvedAssemblies[args.Name] = assembly;
             return assembly;
         }
 

@@ -9,6 +9,9 @@ dotnet_diagnostic.SA1116.severity = silent
 # SA1124: Do not use regions
 dotnet_diagnostic.SA1124.severity = none
 
+# SA1135: Using directive should be qualified
+dotnet_diagnostic.SA1135.severity = none
+
 # SA1201: Elements should appear in the correct order
 dotnet_diagnostic.SA1201.severity = none
 

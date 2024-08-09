@@ -33,11 +33,11 @@ internal static class CurrentArgumentsRetriever
     /// <summary> Finds the test fixture associated with the given test. </summary>
     private static TestFixture? FindFixture(ITest? test)
     {
-        if (test == null)
+        if (test is null)
             return null;
 
         var fixture = test as TestFixture;
-        if (fixture != null)
+        if (fixture is not null)
             return fixture;
 
         return FindFixture(test.Parent);

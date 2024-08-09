@@ -142,7 +142,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     {
         clone = null;
 
-        if (obj == null)
+        if (obj is null)
             return true;
 
         Type ObjType = obj.GetType();
@@ -242,7 +242,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             MethodInfo ObjMethod = (MethodInfo)obj;
             Type DeclaringType = ObjMethod.DeclaringType!;
             var Context = AssemblyLoadContext.GetLoadContext(DeclaringType.Assembly);
-            
+
             if (TryGetTypeInDomain(DeclaringType, out Type? CloneDeclaringType))
             {
                 var CloneContext = AssemblyLoadContext.GetLoadContext(CloneDeclaringType!.Assembly);
@@ -293,7 +293,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         clone = null;
 
         Type SourceType = obj.GetType();
-        BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         FieldInfo[] SourceFields = SourceType.GetFields(Flags);
 
         if (!TryCreateEmptyInstance(SourceType, obj, out object? Instance))
@@ -303,7 +303,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         Type DestinationType = clone.GetType();
         FieldInfo[] DestinationFields = DestinationType.GetFields(Flags);
 
-        for (int i =  0; i < DestinationFields.Length; i++)
+        for (int i = 0; i < DestinationFields.Length; i++)
         {
             FieldInfo SourceField = SourceFields[i];
             FieldInfo DestinationField = DestinationFields[i];
@@ -395,7 +395,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return false;
     }
 
-    private bool TryCreateEmptyInstanceWithConstructor(Type type, object source, bool UsePublicConstructor, object[] Args, out object? instance)
+    private bool TryCreateEmptyInstanceWithConstructor(Type type, object source, bool usePublicConstructor, object[] args, out object? instance)
     {
         string AssemblyLocation = type.Assembly.Location;
         string TypeFullName = type.FullName!;
@@ -408,8 +408,8 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         else
             AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
 
-        BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
-        object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
+        BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
+        object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, args, culture: null, activationAttributes: null);
 
         if (createdInstance is not null)
         {

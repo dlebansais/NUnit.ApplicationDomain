@@ -35,7 +35,7 @@ internal static class AppDomainRunner
 
     /// <summary>
     ///  True if messages should be printed to standard output when a test failure occurs while in the
-    ///  test app domain. 
+    ///  test app domain.
     /// </summary>
     /// <remarks> True by default. </remarks>
     public static bool ShouldIncludeAppDomainErrorMessages { get; set; }
@@ -67,7 +67,7 @@ internal static class AppDomainRunner
             }
             else
             {
-                if (HiddenDataStore != null)
+                if (HiddenDataStore is not null)
                     return HiddenDataStore;
 
                 throw new InvalidOperationException(

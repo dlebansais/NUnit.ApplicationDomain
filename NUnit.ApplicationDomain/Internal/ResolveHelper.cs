@@ -16,7 +16,7 @@ internal sealed class ResolveHelper : MarshalByRefObject
         try
         {
             // Load the assembly. if loading fails, it can throw FileNotFoundException or
-            // FileLoadException. Ignore those; this will return null. 
+            // FileLoadException. Ignore those; this will return null.
             var assembly = Assembly.Load(assemblyName);
             return new Uri(assembly.Location).LocalPath;
         }

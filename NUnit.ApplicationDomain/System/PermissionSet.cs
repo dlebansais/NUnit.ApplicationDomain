@@ -2,7 +2,7 @@
 
 namespace NUnit.ApplicationDomain.System.Security;
 
-using System.Security.Permissions;
+using NUnit.ApplicationDomain.System.Security.Permissions;
 
 internal class PermissionSet
 {

@@ -36,11 +36,11 @@ internal static partial class ParentAppDomainRunner
     {
         var appDomainFactory = ConstructFactory(appDomainFactoryType);
 
-        var typeInfo = test.Fixture != null
+        var typeInfo = test.Fixture is not null
           ? test.TypeInfo
           : test.Method?.TypeInfo;
 
-        if (typeInfo == null)
+        if (typeInfo is null)
             throw new ArgumentException("Cannot determine the type that the test belongs to");
 
         var setupAndTeardown = GetSetupTeardownMethods(typeInfo.Type);
@@ -95,10 +95,10 @@ internal static partial class ParentAppDomainRunner
 
         if (methodData.DataStore is object DataStore)
         {
-            Dictionary<string, object?> Lookup = (Dictionary<string, object?>)DataStore.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(DataStore)!;
+            Dictionary<string, object?> Lookup = (Dictionary<string, object?>)DataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(DataStore)!;
 
             object ClonedDataStore = CloneMethodData!.GetType().GetProperty("DataStore")!.GetValue(CloneMethodData)!;
-            Dictionary<string, object?> ClonedLookup = (Dictionary<string, object?>)ClonedDataStore.GetType().GetField("_lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ClonedDataStore)!;
+            Dictionary<string, object?> ClonedLookup = (Dictionary<string, object?>)ClonedDataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ClonedDataStore)!;
 
             Lookup.Clear();
             foreach (string Key in ClonedLookup.Keys)
@@ -126,12 +126,12 @@ internal static partial class ParentAppDomainRunner
     /// </summary>
     private static IAppDomainFactory ConstructFactory(Type? typeToConstruct)
     {
-        if (typeToConstruct == null)
+        if (typeToConstruct is null)
             return DefaultFactory;
 
         var instance = Activator.CreateInstance(typeToConstruct);
         var factory = instance as IAppDomainFactory;
-        if (factory == null)
+        if (factory is null)
             throw new InvalidOperationException(
                     $"Cannot specify an AppDomainFactory that is not an instance of ${nameof(IAppDomainFactory)}");
 

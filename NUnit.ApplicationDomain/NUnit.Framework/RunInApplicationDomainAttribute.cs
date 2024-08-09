@@ -34,7 +34,7 @@ public sealed class RunInApplicationDomainAttribute : TestActionAttribute
     {
         var exception = ParentAppDomainRunner.Run(testDetails, AppDomainFactory);
 
-        if (exception == null)
+        if (exception is null)
         {
             Assert.Pass();
         }

@@ -30,11 +30,11 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
         Type typeUnderTest = testMethodInfo.TypeUnderTest;
 
         // mark this test as being in the app domain.  As soon as we're done, we're going to tear down
-        // the app domain, so there is no need to set this back to false. 
+        // the app domain, so there is no need to set this back to false.
         AppDomainRunner.IsInTestAppDomain = true;
 
         object? instance;
-        if (testMethodInfo.FixtureArguments == null)
+        if (testMethodInfo.FixtureArguments is null)
         {
             instance = Activator.CreateInstance(typeUnderTest);
         }
@@ -61,7 +61,7 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
             }
 
             var taskResult = testMethodInfo.MethodUnderTest.Invoke(instance, testMethodInfo.Arguments?.ToArray()) as Task;
-            if (taskResult != null)
+            if (taskResult is not null)
             {
                 var handler = CreateAsyncTestResultHandler(instance);
                 handler.Process(taskResult);
@@ -99,7 +99,7 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
             catch (TargetInvocationException e)
             {
                 // we only save the first exception
-                if (exception == null)
+                if (exception is null)
                 {
                     exception = e.InnerException;
                 }
