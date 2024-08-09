@@ -5,7 +5,6 @@ using NUnit.Framework;
 
 namespace NUnit.ApplicationDomain.Tests
 {
-
   // we currently do not have a good way of enforcing that MarshallByRef only comes from the parent domain
   // so for now we allow it and allow the user to shoot themselves
   // 
