@@ -1,5 +1,6 @@
 ﻿namespace NUnit.ApplicationDomain;
 
+using Contracts;
 using global::System;
 using AppDomain = System.AppDomain;
 
@@ -14,11 +15,8 @@ internal class ConstructedAppDomainInformation
     /// <param name="appDomain"> The app domain to use for the test context. </param>
     public ConstructedAppDomainInformation(IAppDomainFactory owner, AppDomain appDomain)
     {
-        if (owner == null)
-            throw new ArgumentNullException(nameof(owner));
-
-        Owner = owner;
-        AppDomain = appDomain;
+        Owner = Contract.AssertNotNull(owner);
+        AppDomain = Contract.AssertNotNull(appDomain);
     }
 
     /// <summary> The factory that constructed this instance. </summary>

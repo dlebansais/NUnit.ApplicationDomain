@@ -115,10 +115,8 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
         {
             Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(Value)!;
-            if (DomainData.ContainsKey(name))
+            if (!DomainData.TryAdd(name, data))
                 DomainData[name] = data;
-            else
-                DomainData.Add(name, data);
         }
     }
 
@@ -138,20 +136,6 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     private Assembly? OnResolving(AssemblyLoadContext context, AssemblyName assemblyRef)
     {
         return RaiseAssemblyResolve(assemblyRef.FullName);
-    }
-
-    public static string GetLoadContext(Assembly assembly)
-    {
-        if (assembly.ReflectionOnly)
-            return "reflection-only context";
-        else if (assembly.IsDynamic)
-            return "no context (Dynamic)";
-        else if (assembly.Location is null)
-            return "no context (via Load(byte[]))";
-        else if (assembly.Location.StartsWith("CodeBase"))
-            return "default context";
-        else
-            return "some context";
     }
 
     public bool TryClone(object? obj, out object? clone)
@@ -409,34 +393,40 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             return true;
         }
 
+        if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object[] Args))
+            if (TryCreateEmptyInstanceWithConstructor(type, source, UsePublicConstructor, Args, out instance))
+                return true;
+
+        instance = null;
+        return false;
+    }
+
+    private bool TryCreateEmptyInstanceWithConstructor(Type type, object source, bool UsePublicConstructor, object[] Args, out object? instance)
+    {
         string AssemblyLocation = type.Assembly.Location;
         string TypeFullName = type.FullName!;
 
-        if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object[] Args))
+        try
         {
+            string SystemAssemblyLocation = typeof(IList).Assembly.Location;
             Assembly AssemblyInDomain;
 
-            try
+            if (AssemblyLocation == SystemAssemblyLocation)
+                AssemblyInDomain = type.Assembly;
+            else
+                AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
+
+            BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
+            object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
+
+            if (createdInstance is not null)
             {
-                string SystemAssemblyLocation = typeof(IList).Assembly.Location;
-
-                if (AssemblyLocation == SystemAssemblyLocation)
-                    AssemblyInDomain = type.Assembly;
-                else
-                    AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
-
-                BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
-                object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
-
-                if (createdInstance is not null)
-                {
-                    instance = createdInstance;
-                    return true;
-                }
+                instance = createdInstance;
+                return true;
             }
-            catch
-            {
-            }
+        }
+        catch
+        {
         }
 
         instance = null;
@@ -475,7 +465,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             {
                 if (Parameter.Name is string ParameterName)
                 {
-                    string AssociatedPropertyName = ParameterName.ToUpper();
+                    string AssociatedPropertyName = ParameterName.ToUpperInvariant();
                     if (type.GetProperty(AssociatedPropertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase) is PropertyInfo Property)
                         Properties.Add(Property);
                     else if (type.GetProperty(AssociatedPropertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase) is PropertyInfo NonPublicProperty)

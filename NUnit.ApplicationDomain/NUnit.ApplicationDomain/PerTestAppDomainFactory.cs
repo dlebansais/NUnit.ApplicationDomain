@@ -34,7 +34,7 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
 
         ConfigureAppDomain(appDomainInfo);
 
-        var appDomain = ConstructAppDomain(testMethodInfo, appDomainInfo);
+        AppDomain appDomain = ConstructAppDomain(testMethodInfo, appDomainInfo);
 
         return new ConstructedAppDomainInformation(this, appDomain);
     }

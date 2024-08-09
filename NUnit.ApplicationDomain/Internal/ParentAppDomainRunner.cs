@@ -1,5 +1,6 @@
 ﻿namespace NUnit.ApplicationDomain.Internal;
 
+using Contracts;
 using global::System;
 using global::System.Collections.Concurrent;
 using global::System.Collections.Generic;
@@ -12,7 +13,7 @@ using PermissionSet = System.Security.PermissionSet;
 using PermissionState = System.Security.Permissions.PermissionState;
 
 /// <summary> Runs a TestMethodInformation in a child app domain. </summary>
-internal static class ParentAppDomainRunner
+internal static partial class ParentAppDomainRunner
 {
     /// <summary> The setup/teardown methods that have been cached for each type thus far. </summary>
     private static readonly ConcurrentDictionary<Type, SetupAndTeardownMethods> CachedInfo
@@ -30,11 +31,9 @@ internal static class ParentAppDomainRunner
     /// <returns>
     ///  The exception that occurred while executing the test, or null if no exception was generated.
     /// </returns>
-    public static Exception? Run(ITest test, Type? appDomainFactoryType)
+    [RequireNotNull(nameof(test))]
+    private static Exception? RunVerified(ITest test, Type? appDomainFactoryType)
     {
-        if (test == null)
-            throw new ArgumentNullException(nameof(test));
-
         var appDomainFactory = ConstructFactory(appDomainFactoryType);
 
         var typeInfo = test.Fixture != null
@@ -68,6 +67,7 @@ internal static class ParentAppDomainRunner
         return possibleException;
     }
 
+    // No inlining to make sure no spurious reference remain behind upon return (for garbage collection).
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Exception? RunInternal(IAppDomainFactory appDomainFactory, TestMethodInformation methodData, out WeakReference weakRef)
     {

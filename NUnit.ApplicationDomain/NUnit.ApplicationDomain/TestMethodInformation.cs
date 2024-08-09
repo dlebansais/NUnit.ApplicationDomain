@@ -1,5 +1,6 @@
 ﻿namespace NUnit.ApplicationDomain;
 
+using Contracts;
 using global::System;
 using global::System.Collections.Generic;
 using global::System.IO;
@@ -28,21 +29,14 @@ internal class TestMethodInformation : MarshalByRefObject
                                    IReadOnlyList<object?>? arguments,
                                    IReadOnlyList<object?>? fixtureArguments)
     {
-        if (typeUnderTest == null)
-            throw new ArgumentNullException(nameof(typeUnderTest));
-        if (methodUnderTest == null)
-            throw new ArgumentNullException(nameof(methodUnderTest));
-        if (methodUnderTest.DeclaringType == null)
-            throw new ArgumentNullException(nameof(methodUnderTest));
-        if (methods == null)
-            throw new ArgumentNullException(nameof(methods));
-
-        string? configFile = FindConfigFile(Assembly.GetAssembly(typeUnderTest)!);
-
-        TypeUnderTest = typeUnderTest;
-        MethodUnderTest = methodUnderTest;
-        Methods = methods;
+        TypeUnderTest = Contract.AssertNotNull(typeUnderTest);
+        MethodUnderTest = Contract.AssertNotNull(methodUnderTest);
+        Methods = Contract.AssertNotNull(methods);
         DataStore = dataStore;
+
+        Contract.AssertNotNull(MethodUnderTest.DeclaringType);
+
+        string? configFile = FindConfigFile(Assembly.GetAssembly(TypeUnderTest)!);
         AppConfigFile = configFile;
 
         OutputStream = Console.Out;
