@@ -39,21 +39,4 @@ namespace NUnit.ApplicationDomain.Tests
       Console.WriteLine("Teardown called");
     }
   }
-
-  public static class StaticInformation
-  {
-    private static int _count;
-
-    static StaticInformation()
-    {
-      _count = 13;
-    }
-
-    // property so that it can be debugged
-    public static int Count
-    {
-      get { return _count; }
-      set { _count = value; }
-    }
-  }
 }

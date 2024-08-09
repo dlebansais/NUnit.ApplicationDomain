@@ -5,16 +5,6 @@ using NUnit.Framework;
 
 namespace NUnit.ApplicationDomain.Tests
 {
-  public abstract class TestsBase
-  {
-    [Test, RunInApplicationDomain]
-    public void SomeTest()
-    {
-    }
-
-    protected abstract void SomeChildSetup();
-  }
-
   [TestFixture]
   public class ActualTestClass : TestsBase
   {
