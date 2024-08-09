@@ -1,19 +1,19 @@
 namespace NUnit.ApplicationDomain;
 
-using global::System;
+using Contracts;
 using global::System.Threading.Tasks;
 
 /// <summary>
 ///  A <see cref="IAsyncTestResultHandler"/> that simply invokes <see cref="Task.Wait()"/> on the
 ///  result of a task-returning test.
 /// </summary>
-public class TaskWaitTestResultHandler : IAsyncTestResultHandler
+public partial class TaskWaitTestResultHandler : IAsyncTestResultHandler
 {
     /// <inheritdoc />
-    public void Process(Task task)
+    [Access("public")]
+    [RequireNotNull(nameof(task))]
+    private static void ProcessVerified(Task task)
     {
-        if (task is null)
-            throw new ArgumentNullException(nameof(task));
         task.Wait();
     }
 }

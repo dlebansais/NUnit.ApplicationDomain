@@ -19,13 +19,13 @@ public sealed class RunInApplicationDomainAttribute : TestActionAttribute
     public Type? AppDomainFactory { get; set; }
 
     /// <inheritdoc />
-    public override void BeforeTest(ITest testDetails)
+    public override void BeforeTest(ITest test)
     {
         // only continue execution if
         if (AppDomain.CurrentDomain.FriendlyName == AppDomainRunner.TestAppDomainName)
             return;
 
-        RunInApplicationDomain(testDetails);
+        RunInApplicationDomain(test);
     }
 
     /// <summary>

@@ -1,26 +1,25 @@
 ﻿namespace NUnit.ApplicationDomain;
 
+using Contracts;
 using global::System;
 using global::System.IO;
-using global::System.Security;
-using global::System.Security.Permissions;
 using NUnit.ApplicationDomain.Internal;
 using NUnit.Framework;
-#if NET8_0_OR_GREATER
 using AppDomain = System.AppDomain;
 using AppDomainSetup = System.AppDomainSetup;
 using PermissionSet = System.Security.PermissionSet;
 using PermissionState = System.Security.Permissions.PermissionState;
-#endif
 
 /// <summary>
 ///  A default app-domain factory that simply constructs a new app-domain before the test and
 ///  tears it down after every test.
 /// </summary>
-public class PerTestAppDomainFactory : IAppDomainFactory
+public partial class PerTestAppDomainFactory : IAppDomainFactory
 {
     /// <inheritdoc />
-    public virtual ConstructedAppDomainInformation GetAppDomainFor(TestMethodInformation testMethodInfo)
+    [Access("public", "virtual")]
+    [RequireNotNull(nameof(testMethodInfo))]
+    private ConstructedAppDomainInformation GetAppDomainForVerified(TestMethodInformation testMethodInfo)
     {
         var appDomainInfo = new AppDomainSetup
                             {
@@ -53,7 +52,9 @@ public class PerTestAppDomainFactory : IAppDomainFactory
     }
 
     /// <inheritdoc />
-    public virtual void MarkFinished(ConstructedAppDomainInformation constructedInfo)
+    [Access("public", "virtual")]
+    [RequireNotNull(nameof(constructedInfo))]
+    private static void MarkFinishedVerified(ConstructedAppDomainInformation constructedInfo)
     {
         // if we don't unload, it's possible that execution continues in the AppDomain, consuming CPU/
         // memory.  See more info @ https://bitbucket.org/zastrowm/nunit.applicationdomain/pull-requests/1/ 

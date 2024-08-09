@@ -5,8 +5,6 @@ using global::System.Collections.Concurrent;
 using global::System.Collections.Generic;
 using global::System.Reflection;
 using global::System.Runtime.CompilerServices;
-using global::System.Security;
-using global::System.Security.Permissions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 using AppDomain = System.AppDomain;
@@ -34,8 +32,8 @@ internal static class ParentAppDomainRunner
     /// </returns>
     public static Exception? Run(ITest test, Type? appDomainFactoryType)
     {
-      if (test == null)
-        throw new ArgumentNullException(nameof(test));
+        if (test == null)
+            throw new ArgumentNullException(nameof(test));
 
         var appDomainFactory = ConstructFactory(appDomainFactoryType);
 
@@ -73,7 +71,7 @@ internal static class ParentAppDomainRunner
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Exception? RunInternal(IAppDomainFactory appDomainFactory, TestMethodInformation methodData, out WeakReference weakRef)
     {
-        var domainInfo = appDomainFactory.GetAppDomainFor(methodData);
+        ConstructedAppDomainInformation domainInfo = appDomainFactory.GetAppDomainFor(methodData);
         AppDomain domain = domainInfo.AppDomain;
 
         // Add an assembly resolver for resolving any assemblies not known by the test application domain.
@@ -107,12 +105,13 @@ internal static class ParentAppDomainRunner
                 Lookup.Add(Key, ClonedLookup[Key]);
         }
 #else
-      domain.Load(methodData.TypeUnderTest.Assembly.GetName());
+        domain.Load(methodData.TypeUnderTest.Assembly.GetName());
 
-      var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>();
+        var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>();
 
-      // Store any resulting exception from executing the test method
-      var possibleException = inDomainRunner?.Execute(methodData);
+        // Store any resulting exception from executing the test method
+        inDomainRunner?.Execute(methodData);
+        var possibleException = inDomainRunner?.LastExceptionCaught;
 #endif
 
         domainInfo.Owner.MarkFinished(domainInfo);
@@ -127,16 +126,16 @@ internal static class ParentAppDomainRunner
     /// </summary>
     private static IAppDomainFactory ConstructFactory(Type? typeToConstruct)
     {
-      if (typeToConstruct == null)
-        return DefaultFactory;
+        if (typeToConstruct == null)
+            return DefaultFactory;
 
-      var instance = Activator.CreateInstance(typeToConstruct);
-      var factory = instance as IAppDomainFactory;
-      if (factory == null)
-        throw new InvalidOperationException(
-                $"Cannot specify an AppDomainFactory that is not an instance of ${nameof(IAppDomainFactory)}");
+        var instance = Activator.CreateInstance(typeToConstruct);
+        var factory = instance as IAppDomainFactory;
+        if (factory == null)
+            throw new InvalidOperationException(
+                    $"Cannot specify an AppDomainFactory that is not an instance of ${nameof(IAppDomainFactory)}");
 
-      return factory;
+        return factory;
     }
 
     /// <summary> Gets the setup and teardown methods for the given type. </summary>
@@ -147,26 +146,26 @@ internal static class ParentAppDomainRunner
     /// </returns>
     private static SetupAndTeardownMethods GetSetupTeardownMethods(Type typeUnderTest)
     {
-      SetupAndTeardownMethods? setupAndTeardown;
+        SetupAndTeardownMethods? setupAndTeardown;
 
-      if (CachedInfo.TryGetValue(typeUnderTest, out setupAndTeardown))
+        if (CachedInfo.TryGetValue(typeUnderTest, out setupAndTeardown))
+            return setupAndTeardown;
+
+        // get all of the setup methods in the type
+        var setupMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeSetUpAttribute>();
+        setupMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<SetUpAttribute>());
+
+        // we want most-derived last
+        setupMethods.Reverse();
+
+        // get all of the teardown methods in the type (it is already the way we want it).
+        var teardownMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeTearDownAttribute>();
+        teardownMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<TearDownAttribute>());
+
+        setupAndTeardown = new SetupAndTeardownMethods(setupMethods, teardownMethods);
+        CachedInfo.TryAdd(typeUnderTest, setupAndTeardown);
+
         return setupAndTeardown;
-
-      // get all of the setup methods in the type
-      var setupMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeSetUpAttribute>();
-      setupMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<SetUpAttribute>());
-
-      // we want most-derived last
-      setupMethods.Reverse();
-
-      // get all of the teardown methods in the type (it is already the way we want it).
-      var teardownMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeTearDownAttribute>();
-      teardownMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<TearDownAttribute>());
-
-      setupAndTeardown = new SetupAndTeardownMethods(setupMethods, teardownMethods);
-      CachedInfo.TryAdd(typeUnderTest, setupAndTeardown);
-
-      return setupAndTeardown;
     }
 
     /// <summary>
@@ -174,6 +173,6 @@ internal static class ParentAppDomainRunner
     /// </summary>
     private static PermissionSet GetPermissionSet()
     {
-      return new PermissionSet(PermissionState.Unrestricted);
+        return new PermissionSet(PermissionState.Unrestricted);
     }
 }

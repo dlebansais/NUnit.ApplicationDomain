@@ -46,7 +46,7 @@ namespace NUnit.ApplicationDomain.Internal
       // Not yet known => Store null in the dictionary (helps against stack overflow if a recursive call happens).
       _resolvedAssemblies[args.Name] = null;
 
-      var assemblyLocation = _resolveHelper.ResolveLocationOfAssembly(args.Name);
+      var assemblyLocation = ResolveHelper.ResolveLocationOfAssembly(args.Name);
       if (!String.IsNullOrEmpty(assemblyLocation))
       {
         // The resolve helper found the assembly.
