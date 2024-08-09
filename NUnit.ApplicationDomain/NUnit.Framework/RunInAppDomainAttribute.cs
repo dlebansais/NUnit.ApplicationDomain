@@ -10,7 +10,7 @@ using AppDomain = System.AppDomain;
 
 /// <summary> Indicates that a test should be run in a separate application domain. </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class RunInApplicationDomainAttribute : TestActionAttribute
+public sealed class RunInApplicationDomainAttribute : TestActionAttribute
 {
     /// <summary>
     ///  The app-domain factory to use when constructing app domains.  Must be an instance of
