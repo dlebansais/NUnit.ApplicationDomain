@@ -363,21 +363,15 @@ internal class AppDomain : MarshalByRefObject, IDisposable
 
             Assembly AssemblyInDomain;
 
-            try
-            {
-                string SystemAssemblyLocation = typeof(IList).Assembly.Location;
+            string SystemAssemblyLocation = typeof(IList).Assembly.Location;
 
-                if (AssemblyLocation == SystemAssemblyLocation)
-                    AssemblyInDomain = type.Assembly;
-                else
-                    AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
+            if (AssemblyLocation == SystemAssemblyLocation)
+                AssemblyInDomain = type.Assembly;
+            else
+                AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
 
-                typeInDomain = AssemblyInDomain.GetType(TypeFullName)!;
-                return true;
-            }
-            catch
-            {
-            }
+            typeInDomain = AssemblyInDomain.GetType(TypeFullName)!;
+            return true;
         }
 
         typeInDomain = null;
@@ -406,27 +400,21 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         string AssemblyLocation = type.Assembly.Location;
         string TypeFullName = type.FullName!;
 
-        try
+        string SystemAssemblyLocation = typeof(IList).Assembly.Location;
+        Assembly AssemblyInDomain;
+
+        if (AssemblyLocation == SystemAssemblyLocation)
+            AssemblyInDomain = type.Assembly;
+        else
+            AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
+
+        BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
+        object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
+
+        if (createdInstance is not null)
         {
-            string SystemAssemblyLocation = typeof(IList).Assembly.Location;
-            Assembly AssemblyInDomain;
-
-            if (AssemblyLocation == SystemAssemblyLocation)
-                AssemblyInDomain = type.Assembly;
-            else
-                AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
-
-            BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (UsePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
-            object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, Args, culture: null, activationAttributes: null);
-
-            if (createdInstance is not null)
-            {
-                instance = createdInstance;
-                return true;
-            }
-        }
-        catch
-        {
+            instance = createdInstance;
+            return true;
         }
 
         instance = null;
