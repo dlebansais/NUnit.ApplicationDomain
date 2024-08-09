@@ -55,5 +55,8 @@ internal class SharedDataStore : MarshalByRefObject
         lookup[key] = value;
     }
 
+    /// <summary>
+    /// Gets all keys.
+    /// </summary>
     public ICollection Keys => lookup.Keys;
 }

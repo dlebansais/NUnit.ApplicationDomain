@@ -6,13 +6,14 @@ using NUnit.ApplicationDomain.Internal;
 using NUnit.Framework.Interfaces;
 using AppDomain = System.AppDomain;
 
-/// <summary> Indicates that a test should be run in a separate application domain. </summary>
+/// <summary>
+/// Indicates that a test should be run in a separate application domain.
+/// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public sealed class RunInApplicationDomainAttribute : TestActionAttribute
 {
     /// <summary>
-    ///  The app-domain factory to use when constructing app domains.  Must be an instance of
-    ///  <see cref="IAppDomainFactory"/>
+    ///  Gets or sets the app-domain factory to use when constructing app domains.  Must be an instance of <see cref="IAppDomainFactory"/>.
     /// </summary>
     public Type? AppDomainFactory { get; set; }
 
@@ -27,8 +28,7 @@ public sealed class RunInApplicationDomainAttribute : TestActionAttribute
     }
 
     /// <summary>
-    ///  Check if we're in the "test" appdomain, and if we aren't, run the given test in an appdomain,
-    ///  capture the result, and propagate it back.
+    ///  Check if we're in the "test" appdomain, and if we aren't, run the given test in an appdomain, capture the result, and propagate it back.
     /// </summary>
     private void RunInApplicationDomain(ITest testDetails)
     {

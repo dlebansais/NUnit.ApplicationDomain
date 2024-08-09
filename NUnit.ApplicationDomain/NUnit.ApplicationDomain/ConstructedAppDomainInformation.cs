@@ -9,19 +9,25 @@ using AppDomain = System.AppDomain;
 /// </summary>
 internal class ConstructedAppDomainInformation
 {
-    /// <summary> Constructor. </summary>
-    /// <exception cref="ArgumentNullException"> Thrown when one or more required arguments are null. </exception>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConstructedAppDomainInformation"/> class.
+    /// </summary>
     /// <param name="owner"> The factory that constructed this instance. </param>
     /// <param name="appDomain"> The app domain to use for the test context. </param>
+    /// <exception cref="ArgumentNullException"> Thrown when one or more required arguments are null. </exception>
     public ConstructedAppDomainInformation(IAppDomainFactory owner, AppDomain appDomain)
     {
         Owner = Contract.AssertNotNull(owner);
         AppDomain = Contract.AssertNotNull(appDomain);
     }
 
-    /// <summary> The factory that constructed this instance. </summary>
+    /// <summary>
+    /// Gets the factory that constructed this instance.
+    /// </summary>
     public IAppDomainFactory Owner { get; }
 
-    /// <summary> The app domain to use for the app-domain context. </summary>
+    /// <summary>
+    /// Gets the app domain to use for the app-domain context.
+    /// </summary>
     public AppDomain AppDomain { get; }
 }

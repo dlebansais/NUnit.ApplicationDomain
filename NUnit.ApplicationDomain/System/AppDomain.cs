@@ -12,34 +12,14 @@ using global::System.Text.Json;
 using NUnit.ApplicationDomain.System.Security;
 using NUnit.ApplicationDomain.System.Security.Policy;
 
+/// <summary>
+/// A fake AppDomain class for .NET Core.
+/// </summary>
 internal class AppDomain : MarshalByRefObject, IDisposable
 {
-    private static Dictionary<AssemblyLoadContext, object> RegisteredDomains
-    {
-        get
-        {
-            object? SharedRegisteredDomains = global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains");
-            if (SharedRegisteredDomains is null)
-                global::System.AppDomain.CurrentDomain.SetData("RegisteredDomains", new Dictionary<AssemblyLoadContext, object>() { { AssemblyLoadContext.Default, new AppDomain() } });
-
-            return (Dictionary<AssemblyLoadContext, object>)global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains")!;
-        }
-    }
-
-    private static int DomainCount;
-
-    public static AppDomain CurrentDomain
-    {
-        get
-        {
-            AssemblyLoadContext? CurrentContext = AssemblyLoadContext.GetLoadContext(Assembly.GetCallingAssembly());
-            if (CurrentContext is not null && RegisteredDomains.TryGetValue(CurrentContext, out object? Value) && Value is AppDomain Domain)
-                return Domain;
-            else
-                return null!;
-        }
-    }
-
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppDomain"/> class.
+    /// </summary>
     private AppDomain()
     {
         FriendlyName = string.Empty;
@@ -47,6 +27,14 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         Context = AssemblyLoadContext.Default;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppDomain"/> class.
+    /// </summary>
+    /// <param name="friendlyName">The domain friendly name.</param>
+    /// <param name="securityInfo">The domain security info.</param>
+    /// <param name="info">The domain construction info.</param>
+    /// <param name="grantSet">The domain permission set.</param>
+    /// <param name="fullTrustAssemblies">The list of trusted assemblies.</param>
     private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
         Info = info;
@@ -61,6 +49,10 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         Context.Resolving += OnResolving;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppDomain"/> class.
+    /// </summary>
+    /// <param name="friendlyName">The domain friendly name.</param>
     public AppDomain(string friendlyName)
     {
         FriendlyName = friendlyName;
@@ -68,17 +60,58 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         Context = AssemblyLoadContext.Default;
     }
 
+    private static Dictionary<AssemblyLoadContext, object> RegisteredDomains
+    {
+        get
+        {
+            object? SharedRegisteredDomains = global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains");
+            if (SharedRegisteredDomains is null)
+                global::System.AppDomain.CurrentDomain.SetData("RegisteredDomains", new Dictionary<AssemblyLoadContext, object>() { { AssemblyLoadContext.Default, new AppDomain() } });
+
+            return (Dictionary<AssemblyLoadContext, object>)global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains")!;
+        }
+    }
+
+    /// <summary>
+    /// Gets the current domain.
+    /// </summary>
+    public static AppDomain CurrentDomain
+    {
+        get
+        {
+            AssemblyLoadContext? CurrentContext = AssemblyLoadContext.GetLoadContext(Assembly.GetCallingAssembly());
+            if (CurrentContext is not null && RegisteredDomains.TryGetValue(CurrentContext, out object? Value) && Value is AppDomain Domain)
+                return Domain;
+            else
+                return null!;
+        }
+    }
+
+    /// <summary>
+    /// Gets the friendly name.
+    /// </summary>
     public string FriendlyName { get; }
-    private AppDomainSetup Info;
-    private AssemblyLoadContext Context;
 
-    private Dictionary<string, object?> Data { get; } = new();
-
+    /// <summary>
+    /// Creates a new AppDomain.
+    /// </summary>
+    /// <param name="friendlyName">The domain friendly name.</param>
+    /// <param name="securityInfo">The domain security info.</param>
+    /// <param name="info">The domain construction info.</param>
+    /// <param name="grantSet">The domain permission set.</param>
+    /// <param name="fullTrustAssemblies">The list of trusted assemblies.</param>
     internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
     {
         return new AppDomain(friendlyName, securityInfo, info, grantSet, fullTrustAssemblies);
     }
 
+    /// <summary>
+    /// Creates a new instance of a type in the domain.
+    /// </summary>
+    /// <param name="assemblyPath">The path to the assembly containing the type.</param>
+    /// <param name="typeName">The type name.</param>
+    /// <param name="usePublicConstructor"><see langword="true"/> to use a public constructor.</param>
+    /// <param name="args">The constructor arguments.</param>
     public object? CreateInstanceAndUnwrap(string assemblyPath, string typeName, bool usePublicConstructor, params object[] args)
     {
         Assembly LoadedAssembly = Context.LoadFromAssemblyPath(assemblyPath);
@@ -86,16 +119,28 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return Result;
     }
 
+    /// <summary>
+    /// Loads an assembly in the domain.
+    /// </summary>
+    /// <param name="assemblyPath">The path to the assembly.</param>
     public Assembly Load(string assemblyPath)
     {
         return Context.LoadFromAssemblyPath(assemblyPath);
     }
 
+    /// <summary>
+    /// Unloads a domain.
+    /// </summary>
+    /// <param name="domain">The domain to unload.</param>
     public static void Unload(AppDomain domain)
     {
         domain.Dispose();
     }
 
+    /// <summary>
+    /// Gets domain-specific data.
+    /// </summary>
+    /// <param name="name">The key to the data.</param>
     public object? GetData(string name)
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
@@ -110,6 +155,11 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             return null;
     }
 
+    /// <summary>
+    /// Sets domain-specific data.
+    /// </summary>
+    /// <param name="name">The key to the data.</param>
+    /// <param name="data">The data.</param>
     public void SetData(string name, object? data)
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
@@ -125,6 +175,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return AssemblyResolve?.Invoke(this, new ResolveEventArgs(name));
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         Context.Resolving -= OnResolving;
@@ -138,6 +189,11 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return RaiseAssemblyResolve(assemblyRef.FullName);
     }
 
+    /// <summary>
+    /// Tries to clone an object in the domain.
+    /// </summary>
+    /// <param name="obj">The object to clone.</param>
+    /// <param name="clone">The cloned object upon return.</param>
     public bool TryClone(object? obj, out object? clone)
     {
         clone = null;
@@ -288,6 +344,11 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Tries to clone an instance of <see cref="MarshalByRefObject" /> in the domain.
+    /// </summary>
+    /// <param name="obj">The object to clone.</param>
+    /// <param name="clone">The cloned object upon return.</param>
     public bool TryClone(MarshalByRefObject obj, out MarshalByRefObject? clone)
     {
         clone = null;
@@ -323,6 +384,11 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Tries to gets a type in the domain.
+    /// </summary>
+    /// <param name="type">The type outside the domain.</param>
+    /// <param name="typeInDomain">The type in the domain upon return.</param>
     public bool TryGetTypeInDomain(Type type, out Type? typeInDomain)
     {
         if (type.IsPrimitive)
@@ -378,6 +444,12 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Tries to create an empty instance of a type in the domain.
+    /// </summary>
+    /// <param name="type">The type to use when creating the instance.</param>
+    /// <param name="source">The source object with properties for constructing the new instance.</param>
+    /// <param name="instance">The new instance upon return.</param>
     private bool TryCreateEmptyInstance(Type type, object source, out object? instance)
     {
         if (type.IsArray)
@@ -488,8 +560,16 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         return c1.GetParameters().Length - c2.GetParameters().Length;
     }
 
+    /// <summary>
+    /// An event triggered when an assembly must be resolved.
+    /// </summary>
 #pragma warning disable CA1003 // Use generic event handler instances: Cannot be fixed.
     public event ResolveEventHandler? AssemblyResolve;
 #pragma warning restore CA1003 // Use generic event handler instances
+
+    private static int DomainCount;
+    private AppDomainSetup Info;
+    private AssemblyLoadContext Context;
+    private Dictionary<string, object?> Data { get; } = new();
 }
 #endif

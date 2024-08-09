@@ -11,6 +11,10 @@ using global::System.Reflection;
 [Serializable]
 internal sealed class ResolveHelper : MarshalByRefObject
 {
+    /// <summary>
+    /// Resolves the location of an assembly.
+    /// </summary>
+    /// <param name="assemblyName">The assembly name.</param>
     public static string? ResolveLocationOfAssembly(string assemblyName)
     {
         try

@@ -1,9 +1,11 @@
 ﻿namespace NUnit.Framework;
 
-/// <summary> Helps to run a test in another application domain. </summary>
 using System;
 using NUnit.Framework.Internal;
 
+/// <summary>
+/// Helps to run a test in another application domain.
+/// </summary>
 internal static class AppDomainRunner
 {
     /// <summary> The name of the app-domain in which tests are run. </summary>
@@ -13,35 +15,34 @@ internal static class AppDomainRunner
     private const string PropertyBagKeyForSharedProperties
       = "{C50C4E3C-4A27-4542-848D-2DCDED92DF77}";
 
-    /// <summary> Static constructor. </summary>
+    /// <summary>
+    /// Initializes static members of the <see cref="AppDomainRunner"/> class.
+    /// </summary>
     static AppDomainRunner()
     {
         ShouldIncludeAppDomainErrorMessages = true;
     }
 
     /// <summary>
-    ///  Returns true if the current test is being executed in an application domain created by the
-    ///  <see cref="RunInApplicationDomainAttribute"/>
+    /// Gets or sets a value indicating whether the current test is being executed in an application domain created by the <see cref="RunInApplicationDomainAttribute"/>.
     /// </summary>
     public static bool IsInTestAppDomain { get; internal set; }
 
     /// <summary>
-    ///  Returns false if the current test is being executed in an application domain created by the
-    ///  <see cref="RunInApplicationDomainAttribute"/>
+    ///  Gets a value indicating whether the current test is not being executed in an application domain created by the <see cref="RunInApplicationDomainAttribute"/>.
     /// </summary>
     /// <remarks> Equivalent to !IsInTestAppDomain. </remarks>
     public static bool IsNotInTestAppDomain
       => !IsInTestAppDomain;
 
     /// <summary>
-    ///  True if messages should be printed to standard output when a test failure occurs while in the
-    ///  test app domain.
+    ///  Gets or sets a value indicating whether messages should be printed to standard output when a test failure occurs while in the test app domain.
     /// </summary>
     /// <remarks> True by default. </remarks>
     public static bool ShouldIncludeAppDomainErrorMessages { get; set; }
 
     /// <summary>
-    ///  Properties that are carried into the app-domain and are carried out when the test is over.
+    ///  Gets properties that are carried into the app-domain and are carried out when the test is over.
     /// </summary>
     public static SharedDataStore? DataStore
     {
@@ -76,6 +77,8 @@ internal static class AppDomainRunner
         }
     }
 
-    /// <summary> The fake data-store set before the test runs. </summary>
+    /// <summary>
+    /// Gets or sets the fake data-store set before the test runs.
+    /// </summary>
     internal static SharedDataStore? HiddenDataStore { get; set; }
 }

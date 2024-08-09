@@ -8,8 +8,9 @@ using global::System.Reflection;
 /// <summary> The setup and teardown methods to invoke before running a test. </summary>
 internal sealed class SetupAndTeardownMethods : MarshalByRefObject
 {
-    /// <summary> Constructor. </summary>
-    /// <exception cref="ArgumentNullException"> Thrown when one or more required arguments are null. </exception>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SetupAndTeardownMethods"/> class.
+    /// </summary>
     /// <param name="setupMethods"> The setup methods for the current test. </param>
     /// <param name="teardownMethods"> The teardown methods for the current test. </param>
     public SetupAndTeardownMethods(IEnumerable<MethodBase> setupMethods, IEnumerable<MethodBase> teardownMethods)
@@ -18,9 +19,13 @@ internal sealed class SetupAndTeardownMethods : MarshalByRefObject
         TeardownMethods = Contract.AssertNotNull(teardownMethods);
     }
 
-    /// <summary> The setup methods for the current test. </summary>
+    /// <summary>
+    /// Gets the setup methods for the current test.
+    /// </summary>
     public IEnumerable<MethodBase> SetupMethods { get; }
 
-    /// <summary> The teardown methods for the current test. </summary>
+    /// <summary>
+    /// Gets the teardown methods for the current test.
+    /// </summary>
     public IEnumerable<MethodBase> TeardownMethods { get; }
 }

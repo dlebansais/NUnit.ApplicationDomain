@@ -169,7 +169,7 @@ internal static partial class ParentAppDomainRunner
     }
 
     /// <summary>
-    /// create a permission set
+    /// create a permission set.
     /// </summary>
     private static PermissionSet GetPermissionSet()
     {

@@ -13,7 +13,7 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     /// <summary>
-    /// Gets the last exception that occurred as a result of executing <see cref="Execute(TestMethodInformation)"/>
+    /// Gets the last exception that occurred as a result of executing <see cref="Execute(TestMethodInformation)"/>.
     /// </summary>
     public Exception? LastExceptionCaught { get; private set; }
 

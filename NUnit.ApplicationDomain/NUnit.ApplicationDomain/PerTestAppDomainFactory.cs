@@ -16,7 +16,7 @@ using PermissionState = System.Security.Permissions.PermissionState;
 /// </summary>
 internal partial class PerTestAppDomainFactory : IAppDomainFactory
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="IAppDomainFactory.GetAppDomainFor(TestMethodInformation)" />
     [Access("public", "virtual")]
     [RequireNotNull(nameof(testMethodInfo))]
     private ConstructedAppDomainInformation GetAppDomainForVerified(TestMethodInformation testMethodInfo)
@@ -51,7 +51,7 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
                                     GetPermissionSet(testMethodInfo));
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="IAppDomainFactory.MarkFinished(ConstructedAppDomainInformation)" />
     [Access("public", "virtual")]
     [RequireNotNull(nameof(constructedInfo))]
     private static void MarkFinishedVerified(ConstructedAppDomainInformation constructedInfo)
@@ -67,8 +67,11 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     {
     }
 
-    /// <summary> Gets the permission set for the constructed app-domains. </summary>
-    /// <returns> The permission set to use for constructed app-domains. </returns>
+    /// <summary>
+    /// Gets the permission set for the constructed app-domains.
+    /// </summary>
+    /// <param name="context">Context of the construction.</param>
+    /// <returns>The permission set to use for constructed app-domains.</returns>
     protected virtual PermissionSet GetPermissionSet(TestMethodInformation context)
     {
         return new PermissionSet(PermissionState.Unrestricted);
