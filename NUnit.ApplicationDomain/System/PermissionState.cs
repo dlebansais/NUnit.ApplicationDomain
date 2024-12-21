@@ -1,4 +1,6 @@
-﻿#if NET8_0_OR_GREATER
+﻿#pragma warning disable IDE0055 // Fix formatting
+
+#if NET8_0_OR_GREATER
 
 namespace NUnit.ApplicationDomain.System.Security.Permissions;
 

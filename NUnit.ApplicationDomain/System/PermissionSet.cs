@@ -1,5 +1,6 @@
 ﻿#pragma warning disable IDE0060 // Remove unused parameter.
 #pragma warning disable CS9113 // Parameter is unread.
+#pragma warning disable IDE0055 // Fix formatting
 
 #if NET8_0_OR_GREATER
 

@@ -2,6 +2,7 @@
 #pragma warning disable IDE0051 // Remove unused private members. This is necessary to be compatibe with the original AppDomain class.
 #pragma warning disable IDE0052 // Remove unread private members. This is necessary to be compatibe with the original AppDomain class.
 #pragma warning disable IDISP007 // Don't dispose injected
+#pragma warning disable IDE0055 // Fix formatting
 
 #if NET8_0_OR_GREATER
 
