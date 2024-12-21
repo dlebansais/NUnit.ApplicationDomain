@@ -22,9 +22,7 @@ internal static class CurrentArgumentsRetriever
     /// <param name="test">The tests that were passed into the test fixture for the given test.</param>
     /// <returns>The arguments used to construct the test fixture, or null if no arguments were used.</returns>
     public static object?[]? GetTestFixtureArguments(ITest test)
-    {
-        return FindFixture(test)?.Arguments;
-    }
+        => FindFixture(test)?.Arguments;
 
     /// <summary>
     /// Finds the test fixture associated with the given test.
@@ -33,13 +31,10 @@ internal static class CurrentArgumentsRetriever
     /// <returns>The test fixture associated with the given test.</returns>
     private static TestFixture? FindFixture(ITest? test)
     {
-        if (test is null)
-            return null;
-
-        var fixture = test as TestFixture;
-        if (fixture is not null)
-            return fixture;
-
-        return FindFixture(test.Parent);
+        return test is null
+            ? null
+            : test is TestFixture fixture
+                ? fixture
+                : FindFixture(test.Parent);
     }
 }

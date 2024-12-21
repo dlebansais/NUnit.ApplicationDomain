@@ -1,7 +1,13 @@
-﻿#if NET8_0_OR_GREATER
+﻿#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0051 // Remove unused private members. This is necessary to be compatibe with the original AppDomain class.
+#pragma warning disable IDE0052 // Remove unread private members. This is necessary to be compatibe with the original AppDomain class.
+#pragma warning disable IDISP007 // Don't dispose injected
+
+#if NET8_0_OR_GREATER
 
 namespace NUnit.ApplicationDomain.System;
 
+using Contracts;
 using global::System;
 using global::System.Collections;
 using global::System.Collections.Generic;
@@ -15,7 +21,7 @@ using NUnit.ApplicationDomain.System.Security.Policy;
 /// <summary>
 /// A fake AppDomain class for .NET Core.
 /// </summary>
-internal class AppDomain : MarshalByRefObject, IDisposable
+internal sealed class AppDomain : MarshalByRefObject, IDisposable
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="AppDomain"/> class.
@@ -42,7 +48,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         DomainCount++;
 
         if (TryClone(this, out MarshalByRefObject? DomainClone))
-            RegisteredDomains.Add(Context, DomainClone!);
+            RegisteredDomains.Add(Context, Contract.AssertNotNull(DomainClone));
 
         FriendlyName = $"{friendlyName} ({Context.Name})";
 
@@ -68,7 +74,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             if (SharedRegisteredDomains is null)
                 global::System.AppDomain.CurrentDomain.SetData("RegisteredDomains", new Dictionary<AssemblyLoadContext, object>() { { AssemblyLoadContext.Default, new AppDomain() } });
 
-            return (Dictionary<AssemblyLoadContext, object>)global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains")!;
+            return (Dictionary<AssemblyLoadContext, object>)Contract.AssertNotNull(global::System.AppDomain.CurrentDomain.GetData("RegisteredDomains"));
         }
     }
 
@@ -80,10 +86,11 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         get
         {
             AssemblyLoadContext? CurrentContext = AssemblyLoadContext.GetLoadContext(Assembly.GetCallingAssembly());
-            if (CurrentContext is not null && RegisteredDomains.TryGetValue(CurrentContext, out object? Value) && Value is AppDomain Domain)
-                return Domain;
-            else
-                return null!;
+
+            // ! Can return null but we need to match the non-null return type.
+            return CurrentContext is not null && RegisteredDomains.TryGetValue(CurrentContext, out object? Value) && Value is AppDomain Domain
+                ? Domain
+                : null!;
         }
     }
 
@@ -101,9 +108,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     /// <param name="grantSet">The domain permission set.</param>
     /// <param name="fullTrustAssemblies">The list of trusted assemblies.</param>
     internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
-    {
-        return new AppDomain(friendlyName, securityInfo, info, grantSet, fullTrustAssemblies);
-    }
+        => new(friendlyName, securityInfo, info, grantSet, fullTrustAssemblies);
 
     /// <summary>
     /// Creates a new instance of a type in the domain.
@@ -124,18 +129,14 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     /// </summary>
     /// <param name="assemblyPath">The path to the assembly.</param>
     public Assembly Load(string assemblyPath)
-    {
-        return Context.LoadFromAssemblyPath(assemblyPath);
-    }
+        => Context.LoadFromAssemblyPath(assemblyPath);
 
     /// <summary>
     /// Unloads a domain.
     /// </summary>
     /// <param name="domain">The domain to unload.</param>
     public static void Unload(AppDomain domain)
-    {
-        domain.Dispose();
-    }
+        => domain.Dispose();
 
     /// <summary>
     /// Gets domain-specific data.
@@ -145,14 +146,17 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
         {
-            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(Value)!;
-            if (DomainData.TryGetValue(name, out var data))
-                return data;
-            else
-                return null;
+            PropertyInfo DataProperty = Contract.AssertNotNull(Value.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic));
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>)Contract.AssertNotNull(DataProperty.GetValue(Value));
+
+            return DomainData.TryGetValue(name, out object? data)
+                ? data
+                : null;
         }
         else
+        {
             return null;
+        }
     }
 
     /// <summary>
@@ -164,30 +168,27 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     {
         if (RegisteredDomains.TryGetValue(Context, out object? Value))
         {
-            Dictionary<string, object?> DomainData = (Dictionary<string, object?>?)Value!.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(Value)!;
+            PropertyInfo DataProperty = Contract.AssertNotNull(Value.GetType().GetProperty("Data", BindingFlags.Instance | BindingFlags.NonPublic));
+            Dictionary<string, object?> DomainData = (Dictionary<string, object?>)Contract.AssertNotNull(DataProperty.GetValue(Value));
             if (!DomainData.TryAdd(name, data))
                 DomainData[name] = data;
         }
     }
 
     private Assembly? RaiseAssemblyResolve(string name)
-    {
-        return AssemblyResolve?.Invoke(this, new ResolveEventArgs(name));
-    }
+        => AssemblyResolve?.Invoke(this, new ResolveEventArgs(name));
 
     /// <inheritdoc />
     public void Dispose()
     {
         Context.Resolving -= OnResolving;
-        RegisteredDomains.Remove(Context);
+        _ = RegisteredDomains.Remove(Context);
 
         Context.Unload();
     }
 
     private Assembly? OnResolving(AssemblyLoadContext context, AssemblyName assemblyRef)
-    {
-        return RaiseAssemblyResolve(assemblyRef.FullName);
-    }
+        => RaiseAssemblyResolve(assemblyRef.FullName);
 
     /// <summary>
     /// Tries to clone an object in the domain.
@@ -226,10 +227,10 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         {
             if (TryGetTypeInDomain(ObjType, out Type? CloneListType))
             {
-                if (TryCreateEmptyInstance(CloneListType!, obj, out clone))
+                if (TryCreateEmptyInstance(Contract.AssertNotNull(CloneListType), obj, out clone))
                 {
                     Array ListFieldValue = (Array)obj;
-                    Array CloneListFieldValue = (Array)clone!;
+                    Array CloneListFieldValue = (Array)Contract.AssertNotNull(clone);
 
                     for (int i = 0; i < ListFieldValue.Length; i++)
                     {
@@ -251,14 +252,14 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         {
             if (TryGetTypeInDomain(ObjType, out Type? CloneListType))
             {
-                if (TryCreateEmptyInstance(CloneListType!, obj, out clone))
+                if (TryCreateEmptyInstance(Contract.AssertNotNull(CloneListType), obj, out clone))
                 {
                     IList ListFieldValue = (IList)obj;
-                    IList CloneListFieldValue = (IList)clone!;
+                    IList CloneListFieldValue = (IList)Contract.AssertNotNull(clone);
 
                     foreach (object Item in ListFieldValue)
                         if (TryClone(Item, out object? CloneItem))
-                            CloneListFieldValue.Add(CloneItem);
+                            _ = CloneListFieldValue.Add(CloneItem);
                         else
                             break;
 
@@ -274,14 +275,14 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         {
             if (TryGetTypeInDomain(ObjType, out Type? CloneDictionaryType))
             {
-                if (TryCreateEmptyInstance(CloneDictionaryType!, obj, out clone))
+                if (TryCreateEmptyInstance(Contract.AssertNotNull(CloneDictionaryType), obj, out clone))
                 {
                     IDictionary DictionaryFieldValue = (IDictionary)obj;
-                    IDictionary CloneDictionaryFieldValue = (IDictionary)clone!;
+                    IDictionary CloneDictionaryFieldValue = (IDictionary)Contract.AssertNotNull(clone);
 
                     foreach (object Key in DictionaryFieldValue.Keys)
                         if (TryClone(Key, out object? CloneKey) && TryClone(DictionaryFieldValue[Key], out object? CloneValue))
-                            CloneDictionaryFieldValue.Add(CloneKey!, CloneValue);
+                            CloneDictionaryFieldValue.Add(Contract.AssertNotNull(CloneKey), CloneValue);
                         else
                             break;
 
@@ -296,13 +297,13 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         else if (ObjType.IsAssignableTo(typeof(MethodInfo)))
         {
             MethodInfo ObjMethod = (MethodInfo)obj;
-            Type DeclaringType = ObjMethod.DeclaringType!;
-            var Context = AssemblyLoadContext.GetLoadContext(DeclaringType.Assembly);
+            Type DeclaringType = Contract.AssertNotNull(ObjMethod.DeclaringType);
+            _ = AssemblyLoadContext.GetLoadContext(DeclaringType.Assembly);
 
             if (TryGetTypeInDomain(DeclaringType, out Type? CloneDeclaringType))
             {
-                var CloneContext = AssemblyLoadContext.GetLoadContext(CloneDeclaringType!.Assembly);
-                MethodInfo[] ClonedMethods = CloneDeclaringType.GetMethods();
+                _ = AssemblyLoadContext.GetLoadContext(Contract.AssertNotNull(CloneDeclaringType).Assembly);
+                MethodInfo[] ClonedMethods = Contract.AssertNotNull(CloneDeclaringType).GetMethods();
 
                 foreach (MethodInfo Method in ClonedMethods)
                     if (Method.Name == ObjMethod.Name)
@@ -330,7 +331,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             if (TryGetTypeInDomain(ObjType, out Type? CloneDictionaryType))
             {
                 string JSonString = JsonSerializer.Serialize(obj);
-                object? DeserializedObj = JsonSerializer.Deserialize(JSonString, CloneDictionaryType!);
+                object? DeserializedObj = JsonSerializer.Deserialize(JSonString, Contract.AssertNotNull(CloneDictionaryType));
 
                 if (DeserializedObj is not null)
                 {
@@ -360,7 +361,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         if (!TryCreateEmptyInstance(SourceType, obj, out object? Instance))
             return false;
 
-        clone = (MarshalByRefObject)Instance!;
+        clone = (MarshalByRefObject)Contract.AssertNotNull(Instance);
         Type DestinationType = clone.GetType();
         FieldInfo[] DestinationFields = DestinationType.GetFields(Flags);
 
@@ -372,7 +373,6 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             if (SourceField.Name.EndsWith("__BackingField", StringComparison.Ordinal))
                 continue;
 
-            Type FieldType = SourceField.FieldType;
             object? FieldValue = SourceField.GetValue(obj);
 
             if (TryClone(FieldValue, out object? CloneValue))
@@ -401,42 +401,36 @@ internal class AppDomain : MarshalByRefObject, IDisposable
             if (TryGetTypeInDomain(type.GetGenericTypeDefinition(), out Type? CloneGenericTypeDefinition))
             {
                 Type[] GenericArguments = type.GetGenericArguments();
-                List<Type> CloneGenericArguments = new();
+                List<Type> CloneGenericArguments = [];
 
                 for (int i = 0; i < GenericArguments.Length; i++)
                     if (TryGetTypeInDomain(GenericArguments[i], out Type? ArgumentType))
-                        CloneGenericArguments.Add(ArgumentType!);
+                        CloneGenericArguments.Add(Contract.AssertNotNull(ArgumentType));
 
                 if (CloneGenericArguments.Count == GenericArguments.Length)
                 {
-                    typeInDomain = CloneGenericTypeDefinition!.MakeGenericType(CloneGenericArguments.ToArray());
+                    typeInDomain = Contract.AssertNotNull(CloneGenericTypeDefinition).MakeGenericType([.. CloneGenericArguments]);
                     return true;
                 }
             }
         }
         else if (type.IsArray)
         {
-            if (TryGetTypeInDomain(type.GetElementType()!, out Type? ElementTypeInDomain))
+            if (TryGetTypeInDomain(Contract.AssertNotNull(type.GetElementType()), out Type? ElementTypeInDomain))
             {
-                typeInDomain = ElementTypeInDomain!.MakeArrayType();
+                typeInDomain = Contract.AssertNotNull(ElementTypeInDomain).MakeArrayType();
                 return true;
             }
         }
         else
         {
             string AssemblyLocation = type.Assembly.Location;
-            string TypeFullName = type.FullName!;
-
-            Assembly AssemblyInDomain;
-
+            string TypeFullName = Contract.AssertNotNull(type.FullName);
             string SystemAssemblyLocation = typeof(IList).Assembly.Location;
-
-            if (AssemblyLocation == SystemAssemblyLocation)
-                AssemblyInDomain = type.Assembly;
-            else
-                AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
-
-            typeInDomain = AssemblyInDomain.GetType(TypeFullName)!;
+            Assembly AssemblyInDomain = AssemblyLocation == SystemAssemblyLocation
+                ? type.Assembly
+                : Context.LoadFromAssemblyPath(AssemblyLocation);
+            typeInDomain = Contract.AssertNotNull(AssemblyInDomain.GetType(TypeFullName));
             return true;
         }
 
@@ -455,31 +449,27 @@ internal class AppDomain : MarshalByRefObject, IDisposable
         if (type.IsArray)
         {
             Array SourceArray = (Array)source;
-            instance = Array.CreateInstance(type.GetElementType()!, SourceArray.Length);
+            instance = Array.CreateInstance(Contract.AssertNotNull(type.GetElementType()), SourceArray.Length);
             return true;
         }
 
         if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object[] Args))
-            if (TryCreateEmptyInstanceWithConstructor(type, source, UsePublicConstructor, Args, out instance))
+            if (TryCreateEmptyInstanceWithConstructor(type, UsePublicConstructor, Args, out instance))
                 return true;
 
         instance = null;
         return false;
     }
 
-    private bool TryCreateEmptyInstanceWithConstructor(Type type, object source, bool usePublicConstructor, object[] args, out object? instance)
+    private bool TryCreateEmptyInstanceWithConstructor(Type type, bool usePublicConstructor, object[] args, out object? instance)
     {
         string AssemblyLocation = type.Assembly.Location;
-        string TypeFullName = type.FullName!;
+        string TypeFullName = Contract.AssertNotNull(type.FullName);
 
         string SystemAssemblyLocation = typeof(IList).Assembly.Location;
-        Assembly AssemblyInDomain;
-
-        if (AssemblyLocation == SystemAssemblyLocation)
-            AssemblyInDomain = type.Assembly;
-        else
-            AssemblyInDomain = Context.LoadFromAssemblyPath(AssemblyLocation);
-
+        Assembly AssemblyInDomain = AssemblyLocation == SystemAssemblyLocation
+            ? type.Assembly
+            : Context.LoadFromAssemblyPath(AssemblyLocation);
         BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
         object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, args, culture: null, activationAttributes: null);
 
@@ -503,23 +493,20 @@ internal class AppDomain : MarshalByRefObject, IDisposable
 
         usePublicConstructor = false;
 
-        if (FindContructorAndArgs(type, BindingFlags.NonPublic, source, out args))
-            return true;
-
-        return false;
+        return FindContructorAndArgs(type, BindingFlags.NonPublic, source, out args);
     }
 
     private bool FindContructorAndArgs(Type type, BindingFlags publicFlag, object source, out object[] args)
     {
-        args = Array.Empty<object>();
+        args = [];
 
-        List<ConstructorInfo> Constructors = type.GetConstructors(BindingFlags.Instance | publicFlag).ToList();
+        List<ConstructorInfo> Constructors = [.. type.GetConstructors(BindingFlags.Instance | publicFlag)];
         Constructors.Sort(ByParameterCountAscending);
 
         foreach (ConstructorInfo Constructor in Constructors)
         {
             ParameterInfo[] Parameters = Constructor.GetParameters();
-            List<PropertyInfo> Properties = new();
+            List<PropertyInfo> Properties = [];
 
             foreach (ParameterInfo Parameter in Parameters)
             {
@@ -535,18 +522,18 @@ internal class AppDomain : MarshalByRefObject, IDisposable
 
             if (Properties.Count == Parameters.Length)
             {
-                List<object> Args = new();
+                List<object?> Args = [];
 
                 for (int i = 0; i < Properties.Count; i++)
                 {
                     PropertyInfo Property = Properties[i];
                     if (TryClone(Property.GetValue(source), out object? ClonedProperty))
-                        Args.Add(ClonedProperty!);
+                        Args.Add(ClonedProperty);
                 }
 
                 if (Args.Count == Parameters.Length)
                 {
-                    args = Args.ToArray();
+                    args = [.. Args];
                     return true;
                 }
             }
@@ -556,9 +543,7 @@ internal class AppDomain : MarshalByRefObject, IDisposable
     }
 
     private static int ByParameterCountAscending(ConstructorInfo c1, ConstructorInfo c2)
-    {
-        return c1.GetParameters().Length - c2.GetParameters().Length;
-    }
+        => c1.GetParameters().Length - c2.GetParameters().Length;
 
     /// <summary>
     /// An event triggered when an assembly must be resolved.
@@ -568,8 +553,8 @@ internal class AppDomain : MarshalByRefObject, IDisposable
 #pragma warning restore CA1003 // Use generic event handler instances
 
     private static int DomainCount;
-    private AppDomainSetup Info;
-    private AssemblyLoadContext Context;
-    private Dictionary<string, object?> Data { get; } = new();
+    private readonly AppDomainSetup Info;
+    private readonly AssemblyLoadContext Context;
+    private Dictionary<string, object?> Data { get; } = [];
 }
 #endif

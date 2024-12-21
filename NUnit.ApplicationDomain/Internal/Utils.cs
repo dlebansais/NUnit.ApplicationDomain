@@ -1,5 +1,6 @@
 ﻿namespace NUnit.ApplicationDomain.Internal;
 
+using Contracts;
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Linq;
@@ -21,7 +22,7 @@ internal static class Utils
     public static List<MethodInfo> GetMethodsWithAttribute<T>(this Type? typeUnderTest)
         where T : Attribute
     {
-        var methodsFound = new List<MethodInfo>();
+        List<MethodInfo> methodsFound = [];
 
         while (typeUnderTest is not null)
         {
@@ -31,11 +32,11 @@ internal static class Utils
                                                 | BindingFlags.NonPublic;
 
             // get only methods that do not have any parameters
-            var methodsOnCurrentType = from method in typeUnderTest.GetMethods(searchFlags)
-                                        where method.GetParameters().Length == 0
-                                        let attributes = (T[])method.GetCustomAttributes(typeof(T), false)
-                                        where attributes.Length >= 1
-                                        select method;
+            IEnumerable<MethodInfo> methodsOnCurrentType = from method in typeUnderTest.GetMethods(searchFlags)
+                                                           where method.GetParameters().Length == 0
+                                                           let attributes = (T[])method.GetCustomAttributes(typeof(T), false)
+                                                           where attributes.Length >= 1
+                                                           select method;
 
             methodsFound.AddRange(methodsOnCurrentType);
 
@@ -56,9 +57,7 @@ internal static class Utils
     /// <param name="args">Arguments for the constructor.</param>
     /// <returns>An instance of T, unwrapped from the domain.</returns>
     internal static object? CreateInstanceAndUnwrap<T>(this AppDomain domain, bool usePublicConstructor = false, params object[] args)
-    {
-        return domain.CreateInstanceAndUnwrap(typeof(T).Assembly.Location, typeof(T).FullName!, usePublicConstructor, args);
-    }
+        => domain.CreateInstanceAndUnwrap(typeof(T).Assembly.Location, Contract.AssertNotNull(typeof(T).FullName), usePublicConstructor, args);
 #else
     /// <summary>
     /// Create an instance of the object in the given domain.
@@ -67,8 +66,6 @@ internal static class Utils
     /// <param name="domain">The domain in which the object should be constructed.</param>
     /// <returns>An instance of T, unwrapped from the domain.</returns>
     internal static T? CreateInstanceAndUnwrap<T>(this AppDomain domain)
-    {
-        return (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.FullName!, typeof(T).FullName!);
-    }
+        => (T?)domain.CreateInstanceAndUnwrap(typeof(T).Assembly.FullName, Contract.AssertNotNull(typeof(T).FullName));
 #endif
 }

@@ -16,11 +16,9 @@ using PermissionState = System.Security.Permissions.PermissionState;
 internal static partial class ParentAppDomainRunner
 {
     /// <summary> The setup/teardown methods that have been cached for each type thus far. </summary>
-    private static readonly ConcurrentDictionary<Type, SetupAndTeardownMethods> CachedInfo
-      = new ConcurrentDictionary<Type, SetupAndTeardownMethods>();
+    private static readonly ConcurrentDictionary<Type, SetupAndTeardownMethods> CachedInfo = new();
 
-    private static readonly PerTestAppDomainFactory DefaultFactory
-      = new PerTestAppDomainFactory();
+    private static readonly PerTestAppDomainFactory DefaultFactory = new();
 
     /// <summary> Runs the given test for the given type under a new, clean app domain. </summary>
     /// <exception cref="ArgumentNullException"> Thrown when one or more required arguments are null. </exception>
@@ -34,29 +32,22 @@ internal static partial class ParentAppDomainRunner
     [RequireNotNull(nameof(test))]
     private static Exception? RunVerified(ITest test, Type? appDomainFactoryType)
     {
-        var appDomainFactory = ConstructFactory(appDomainFactoryType);
+        IAppDomainFactory appDomainFactory = ConstructFactory(appDomainFactoryType);
+        ITypeInfo? typeInfo = GetTypeInfo(test) ?? throw new ArgumentException("Cannot determine the type that the test belongs to");
+        SetupAndTeardownMethods setupAndTeardown = GetSetupTeardownMethods(typeInfo.Type);
 
-        var typeInfo = test.Fixture is not null
-          ? test.TypeInfo
-          : test.Method?.TypeInfo;
+        object?[] testArguments = CurrentArgumentsRetriever.GetTestArguments(test);
+        object?[]? testFixtureArguments = CurrentArgumentsRetriever.GetTestFixtureArguments(test);
+        MethodInfo? testMethod = test.Method?.MethodInfo;
 
-        if (typeInfo is null)
-            throw new ArgumentException("Cannot determine the type that the test belongs to");
+        TestMethodInformation methodData = new(typeInfo.Type,
+                                               testMethod,
+                                               setupAndTeardown,
+                                               AppDomainRunner.DataStore,
+                                               testArguments,
+                                               testFixtureArguments);
 
-        var setupAndTeardown = GetSetupTeardownMethods(typeInfo.Type);
-
-        var testArguments = CurrentArgumentsRetriever.GetTestArguments(test);
-        var testFixtureArguments = CurrentArgumentsRetriever.GetTestFixtureArguments(test);
-        var testMethod = test.Method?.MethodInfo;
-
-        var methodData = new TestMethodInformation(typeInfo.Type,
-                                                   testMethod,
-                                                   setupAndTeardown,
-                                                   AppDomainRunner.DataStore,
-                                                   testArguments,
-                                                   testFixtureArguments);
-
-        var possibleException = RunInternal(appDomainFactory, methodData, out WeakReference weakRef);
+        Exception? possibleException = RunInternal(appDomainFactory, methodData, out WeakReference weakRef);
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
@@ -67,6 +58,13 @@ internal static partial class ParentAppDomainRunner
         return possibleException;
     }
 
+    private static ITypeInfo? GetTypeInfo(ITest test)
+    {
+        return test.Fixture is not null
+          ? test.TypeInfo
+          : test.Method?.TypeInfo;
+    }
+
     // No inlining to make sure no spurious reference remain behind upon return (for garbage collection).
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Exception? RunInternal(IAppDomainFactory appDomainFactory, TestMethodInformation methodData, out WeakReference weakRef)
@@ -75,7 +73,7 @@ internal static partial class ParentAppDomainRunner
         AppDomain domain = domainInfo.AppDomain;
 
         // Add an assembly resolver for resolving any assemblies not known by the test application domain.
-        InDomainAssemblyResolver assemblyResolver = new InDomainAssemblyResolver(new ResolveHelper());
+        InDomainAssemblyResolver assemblyResolver = new(new ResolveHelper());
         domain.AssemblyResolve += assemblyResolver.ResolveEventHandler;
 
         weakRef = new WeakReference(domain, trackResurrection: true);
@@ -83,7 +81,7 @@ internal static partial class ParentAppDomainRunner
 #if NET8_0_OR_GREATER
         domain.Load(methodData.TypeUnderTest.Assembly.Location);
 
-        var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);
+        object? inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>(usePublicConstructor: true);
 
         if (!domain.TryClone(methodData, out object? CloneMethodData))
             throw new InvalidOperationException();
@@ -91,14 +89,17 @@ internal static partial class ParentAppDomainRunner
         MethodInfo? executeMethod = inDomainRunner?.GetType().GetMethod("Execute");
 
         // Store any resulting exception from executing the test method
-        var possibleException = executeMethod?.Invoke(inDomainRunner, new object?[] { CloneMethodData! }) as Exception;
+        Exception? possibleException = executeMethod?.Invoke(inDomainRunner, [CloneMethodData]) as Exception;
 
         if (methodData.DataStore is object DataStore)
         {
-            Dictionary<string, object?> Lookup = (Dictionary<string, object?>)DataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(DataStore)!;
+            FieldInfo StoreLookupField = Contract.AssertNotNull(DataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic));
+            Dictionary<string, object?> Lookup = (Dictionary<string, object?>)Contract.AssertNotNull(StoreLookupField.GetValue(DataStore));
 
-            object ClonedDataStore = CloneMethodData!.GetType().GetProperty("DataStore")!.GetValue(CloneMethodData)!;
-            Dictionary<string, object?> ClonedLookup = (Dictionary<string, object?>)ClonedDataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(ClonedDataStore)!;
+            PropertyInfo DataStoreProperty = Contract.AssertNotNull(Contract.AssertNotNull(CloneMethodData).GetType().GetProperty("DataStore"));
+            object ClonedDataStore = Contract.AssertNotNull(DataStoreProperty.GetValue(CloneMethodData));
+            FieldInfo ClonedStoreLookupField = Contract.AssertNotNull(ClonedDataStore.GetType().GetField("lookup", BindingFlags.Instance | BindingFlags.NonPublic));
+            Dictionary<string, object?>? ClonedLookup = (Dictionary<string, object?>)Contract.AssertNotNull(ClonedStoreLookupField.GetValue(ClonedDataStore));
 
             Lookup.Clear();
             foreach (string Key in ClonedLookup.Keys)
@@ -107,11 +108,11 @@ internal static partial class ParentAppDomainRunner
 #else
         domain.Load(methodData.TypeUnderTest.Assembly.GetName());
 
-        var inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>();
+        InDomainTestMethodRunner? inDomainRunner = domain.CreateInstanceAndUnwrap<InDomainTestMethodRunner>();
 
         // Store any resulting exception from executing the test method
         inDomainRunner?.Execute(methodData);
-        var possibleException = inDomainRunner?.LastExceptionCaught;
+        Exception? possibleException = inDomainRunner?.LastExceptionCaught;
 #endif
 
         domainInfo.Owner.MarkFinished(domainInfo);
@@ -129,13 +130,10 @@ internal static partial class ParentAppDomainRunner
         if (typeToConstruct is null)
             return DefaultFactory;
 
-        var instance = Activator.CreateInstance(typeToConstruct);
-        var factory = instance as IAppDomainFactory;
-        if (factory is null)
-            throw new InvalidOperationException(
-                    $"Cannot specify an AppDomainFactory that is not an instance of ${nameof(IAppDomainFactory)}");
+        object? instance = Activator.CreateInstance(typeToConstruct);
+        IAppDomainFactory? factory = instance as IAppDomainFactory;
 
-        return factory;
+        return factory ?? throw new InvalidOperationException($"Cannot specify an AppDomainFactory that is not an instance of ${nameof(IAppDomainFactory)}");
     }
 
     /// <summary> Gets the setup and teardown methods for the given type. </summary>
@@ -146,24 +144,22 @@ internal static partial class ParentAppDomainRunner
     /// </returns>
     private static SetupAndTeardownMethods GetSetupTeardownMethods(Type typeUnderTest)
     {
-        SetupAndTeardownMethods? setupAndTeardown;
-
-        if (CachedInfo.TryGetValue(typeUnderTest, out setupAndTeardown))
+        if (CachedInfo.TryGetValue(typeUnderTest, out SetupAndTeardownMethods? setupAndTeardown))
             return setupAndTeardown;
 
         // get all of the setup methods in the type
-        var setupMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeSetUpAttribute>();
+        List<MethodInfo> setupMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeSetUpAttribute>();
         setupMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<SetUpAttribute>());
 
         // we want most-derived last
         setupMethods.Reverse();
 
         // get all of the teardown methods in the type (it is already the way we want it).
-        var teardownMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeTearDownAttribute>();
+        List<MethodInfo> teardownMethods = typeUnderTest.GetMethodsWithAttribute<OneTimeTearDownAttribute>();
         teardownMethods.AddRange(typeUnderTest.GetMethodsWithAttribute<TearDownAttribute>());
 
         setupAndTeardown = new SetupAndTeardownMethods(setupMethods, teardownMethods);
-        CachedInfo.TryAdd(typeUnderTest, setupAndTeardown);
+        _ = CachedInfo.TryAdd(typeUnderTest, setupAndTeardown);
 
         return setupAndTeardown;
     }
@@ -172,7 +168,5 @@ internal static partial class ParentAppDomainRunner
     /// create a permission set.
     /// </summary>
     private static PermissionSet GetPermissionSet()
-    {
-        return new PermissionSet(PermissionState.Unrestricted);
-    }
+        => new(PermissionState.Unrestricted);
 }

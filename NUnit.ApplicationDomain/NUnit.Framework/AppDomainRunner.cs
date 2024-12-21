@@ -53,7 +53,7 @@ public static class AppDomainRunner
                 // in the parent domain, we store it in the current test info.
                 SharedDataStore? properties;
 
-                var propertyBag = TestExecutionContext.CurrentContext.CurrentTest.Properties;
+                Interfaces.IPropertyBag propertyBag = TestExecutionContext.CurrentContext.CurrentTest.Properties;
                 if (propertyBag.ContainsKey(PropertyBagKeyForSharedProperties))
                 {
                     properties = (SharedDataStore?)propertyBag.Get(PropertyBagKeyForSharedProperties);
@@ -68,11 +68,7 @@ public static class AppDomainRunner
             }
             else
             {
-                if (HiddenDataStore is not null)
-                    return HiddenDataStore;
-
-                throw new InvalidOperationException(
-                        $"For some reason, the {typeof(SharedDataStore)} was not flowed into the test-domain");
+                return HiddenDataStore ?? throw new InvalidOperationException($"For some reason, the {typeof(SharedDataStore)} was not flowed into the test-domain");
             }
         }
     }

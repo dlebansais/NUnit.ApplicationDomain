@@ -33,19 +33,13 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
         // the app domain, so there is no need to set this back to false.
         AppDomainRunner.IsInTestAppDomain = true;
 
-        object? instance;
-        if (testMethodInfo.FixtureArguments is null)
-        {
-            instance = Activator.CreateInstance(typeUnderTest);
-        }
-        else
-        {
-            instance = Activator.CreateInstance(typeUnderTest, testMethodInfo.FixtureArguments.ToArray());
-        }
+        object? instance = testMethodInfo.FixtureArguments is null
+            ? Activator.CreateInstance(typeUnderTest)
+            : Activator.CreateInstance(typeUnderTest, [.. testMethodInfo.FixtureArguments]);
 
         // run setup and test, with an exception handler
         LastExceptionCaught = RunSetupAndTest(testMethodInfo, instance);
-        var teardownException = RunTeardown(testMethodInfo, instance);
+        Exception? teardownException = RunTeardown(testMethodInfo, instance);
 
         LastExceptionCaught ??= teardownException;
     }
@@ -55,15 +49,13 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
     {
         try
         {
-            foreach (var setupMethod in testMethodInfo.Methods.SetupMethods)
-            {
-                setupMethod.Invoke(instance, null);
-            }
+            foreach (MethodBase setupMethod in testMethodInfo.Methods.SetupMethods)
+                _ = setupMethod.Invoke(instance, null);
 
-            var taskResult = testMethodInfo.MethodUnderTest.Invoke(instance, testMethodInfo.Arguments?.ToArray()) as Task;
+            Task? taskResult = testMethodInfo.MethodUnderTest.Invoke(instance, testMethodInfo.Arguments?.ToArray()) as Task;
             if (taskResult is not null)
             {
-                var handler = CreateAsyncTestResultHandler(instance);
+                IAsyncTestResultHandler handler = CreateAsyncTestResultHandler(instance);
                 handler.Process(taskResult);
             }
         }
@@ -90,19 +82,16 @@ internal sealed class InDomainTestMethodRunner : MarshalByRefObject
     {
         Exception? exception = null;
 
-        foreach (var teardownMethod in testMethodInfo.Methods.TeardownMethods)
+        foreach (MethodBase teardownMethod in testMethodInfo.Methods.TeardownMethods)
         {
             try
             {
-                teardownMethod.Invoke(instance, null);
+                _ = teardownMethod.Invoke(instance, null);
             }
             catch (TargetInvocationException e)
             {
                 // we only save the first exception
-                if (exception is null)
-                {
-                    exception = e.InnerException;
-                }
+                exception ??= e.InnerException;
             }
         }
 

@@ -21,11 +21,11 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     [RequireNotNull(nameof(testMethodInfo))]
     private ConstructedAppDomainInformation GetAppDomainForVerified(TestMethodInformation testMethodInfo)
     {
-        var appDomainInfo = new AppDomainSetup
-                            {
-                            // At a minimum, we want the ability to load the types defined in this assembly
-                            ApplicationBase = GetDirectoryToMyDll(),
-                            };
+        AppDomainSetup appDomainInfo = new()
+        {
+            // At a minimum, we want the ability to load the types defined in this assembly
+            ApplicationBase = GetDirectoryToMyDll(),
+        };
 
         if (!string.IsNullOrEmpty(testMethodInfo.AppConfigFile))
         {
@@ -55,11 +55,10 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     [Access("public", "virtual")]
     [RequireNotNull(nameof(constructedInfo))]
     private static void MarkFinishedVerified(ConstructedAppDomainInformation constructedInfo)
-    {
+
         // if we don't unload, it's possible that execution continues in the AppDomain, consuming CPU/
         // memory.  See more info @ https://bitbucket.org/zastrowm/nunit.applicationdomain/pull-requests/1/
-        AppDomain.Unload(constructedInfo.AppDomain);
-    }
+        => AppDomain.Unload(constructedInfo.AppDomain);
 
     /// <summary> Method that allows sub-classes to configure how the app-domain is setup. </summary>
     /// <param name="appDomainSetup"> The AppDomainSetup that will be used to construct the instance. </param>
@@ -73,13 +72,9 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     /// <param name="context">Context of the construction.</param>
     /// <returns>The permission set to use for constructed app-domains.</returns>
     protected virtual PermissionSet GetPermissionSet(TestMethodInformation context)
-    {
-        return new PermissionSet(PermissionState.Unrestricted);
-    }
+        => new(PermissionState.Unrestricted);
 
     /// <summary> Gets the directory where the dlls for NUnit.Application.Domain can be found. </summary>
     private static string? GetDirectoryToMyDll()
-    {
-        return Path.GetDirectoryName(new Uri(typeof(InDomainTestMethodRunner).Assembly.Location).LocalPath);
-    }
+        => Path.GetDirectoryName(new Uri(typeof(InDomainTestMethodRunner).Assembly.Location).LocalPath);
 }

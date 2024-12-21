@@ -34,9 +34,9 @@ internal class TestMethodInformation : MarshalByRefObject
         Methods = Contract.AssertNotNull(methods);
         DataStore = dataStore;
 
-        Contract.AssertNotNull(MethodUnderTest.DeclaringType);
+        _ = Contract.AssertNotNull(MethodUnderTest.DeclaringType);
 
-        string? configFile = FindConfigFile(Assembly.GetAssembly(TypeUnderTest)!);
+        string? configFile = FindConfigFile(Contract.AssertNotNull(Assembly.GetAssembly(TypeUnderTest)));
         AppConfigFile = configFile;
 
         OutputStream = Console.Out;

@@ -11,8 +11,5 @@ internal partial class TaskWaitTestResultHandler : IAsyncTestResultHandler
     /// <inheritdoc cref="IAsyncTestResultHandler.Process(Task)" />
     [Access("public")]
     [RequireNotNull(nameof(task))]
-    private static void ProcessVerified(Task task)
-    {
-        task.Wait();
-    }
+    private static void ProcessVerified(Task task) => task.Wait();
 }

@@ -32,7 +32,7 @@ public sealed class RunInApplicationDomainAttribute : TestActionAttribute
     /// </summary>
     private void RunInApplicationDomain(ITest testDetails)
     {
-        var exception = ParentAppDomainRunner.Run(testDetails, AppDomainFactory);
+        Exception? exception = ParentAppDomainRunner.Run(testDetails, AppDomainFactory);
 
         if (exception is null)
         {

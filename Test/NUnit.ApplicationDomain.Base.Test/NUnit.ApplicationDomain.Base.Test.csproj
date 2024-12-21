@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net481;net8.0</TargetFrameworks>
+        <TargetFrameworks>net481;net8.0;net9.0</TargetFrameworks>
+        <LangVersion>13</LangVersion>
         <Nullable>enable</Nullable>
-        <LangVersion>12</LangVersion>
         <Platforms>x64</Platforms>
 
     </PropertyGroup>

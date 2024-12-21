@@ -1,4 +1,6 @@
-﻿namespace NUnit.ApplicationDomain.Internal;
+﻿#pragma warning disable CA1822 // Mark members as static
+
+namespace NUnit.ApplicationDomain.Internal;
 
 using global::System;
 using global::System.IO;
@@ -15,13 +17,13 @@ internal sealed class ResolveHelper : MarshalByRefObject
     /// Resolves the location of an assembly.
     /// </summary>
     /// <param name="assemblyName">The assembly name.</param>
-    public static string? ResolveLocationOfAssembly(string assemblyName)
+    public string? ResolveLocationOfAssembly(string assemblyName)
     {
         try
         {
             // Load the assembly. if loading fails, it can throw FileNotFoundException or
             // FileLoadException. Ignore those; this will return null.
-            var assembly = Assembly.Load(assemblyName);
+            Assembly assembly = Assembly.Load(assemblyName);
             return new Uri(assembly.Location).LocalPath;
         }
         catch (FileNotFoundException)

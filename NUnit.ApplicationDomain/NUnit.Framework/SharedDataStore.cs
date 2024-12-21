@@ -10,17 +10,14 @@ using System.Collections.Generic;
 /// </summary>
 public class SharedDataStore : MarshalByRefObject
 {
-    private readonly Dictionary<string, object?> lookup
-      = new Dictionary<string, object?>();
+    private readonly Dictionary<string, object?> lookup = [];
 
     /// <summary> Gets an object with the given key. </summary>
     /// <typeparam name="T"> The type of object to retrieve. </typeparam>
     /// <param name="key"> The key of the object to retrieve. </param>
     /// <returns> An object. </returns>
     public T? Get<T>(string key)
-    {
-        return (T?)lookup[key];
-    }
+        => (T?)lookup[key];
 
     /// <summary> Attempts to get the given item. </summary>
     /// <typeparam name="T"> The type of data to retrieve. </typeparam>
@@ -32,14 +29,13 @@ public class SharedDataStore : MarshalByRefObject
     /// </returns>
     public bool TryGet<T>(string key, out T? value)
     {
-        object? raw;
-        if (lookup.TryGetValue(key, out raw))
+        if (lookup.TryGetValue(key, out object? raw))
         {
             value = (T?)raw;
             return true;
         }
 
-        value = default(T);
+        value = default;
         return false;
     }
 
@@ -51,9 +47,7 @@ public class SharedDataStore : MarshalByRefObject
     /// <param name="value"> The value of the key to set.  The object must be serializable (or if not
     ///  in the test-appdomain, must derive from MarshalByRefObject). </param>
     public void Set<T>(string key, T? value)
-    {
-        lookup[key] = value;
-    }
+        => lookup[key] = value;
 
     /// <summary>
     /// Gets all keys.
