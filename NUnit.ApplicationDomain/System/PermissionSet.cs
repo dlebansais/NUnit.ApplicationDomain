@@ -14,5 +14,4 @@ using NUnit.ApplicationDomain.System.Security.Permissions;
 internal class PermissionSet(PermissionState state)
 {
 }
-
 #endif

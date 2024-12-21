@@ -17,5 +17,4 @@ internal enum PermissionState
     /// </summary>
     Unrestricted = 1,
 }
-
 #endif

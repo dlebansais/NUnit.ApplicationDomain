@@ -37,5 +37,4 @@ internal class AppDomainSetup : MarshalByRefObject
     /// </summary>
     public string? ConfigurationFile { get; set; }
 }
-
 #endif
