@@ -46,19 +46,21 @@ internal partial class PerTestAppDomainFactory : IAppDomainFactory
     protected virtual AppDomain ConstructAppDomain(TestMethodInformation testMethodInfo, AppDomainSetup appDomainInfo)
     {
         return AppDomain.CreateDomain(AppDomainRunner.TestAppDomainName,
-                                    null,
-                                    appDomainInfo,
-                                    GetPermissionSet(testMethodInfo));
+                                      null,
+                                      appDomainInfo,
+                                      GetPermissionSet(testMethodInfo));
     }
 
     /// <inheritdoc cref="IAppDomainFactory.MarkFinished(ConstructedAppDomainInformation)" />
     [Access("public", "virtual")]
     [RequireNotNull(nameof(constructedInfo))]
     private static void MarkFinishedVerified(ConstructedAppDomainInformation constructedInfo)
-
+    {
         // if we don't unload, it's possible that execution continues in the AppDomain, consuming CPU/
         // memory.  See more info @ https://bitbucket.org/zastrowm/nunit.applicationdomain/pull-requests/1/
-        => AppDomain.Unload(constructedInfo.AppDomain);
+        AppDomain AppDomain = constructedInfo.AppDomain;
+        AppDomain.Unload(AppDomain);
+    }
 
     /// <summary> Method that allows sub-classes to configure how the app-domain is setup. </summary>
     /// <param name="appDomainSetup"> The AppDomainSetup that will be used to construct the instance. </param>

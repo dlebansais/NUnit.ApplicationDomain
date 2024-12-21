@@ -19,7 +19,7 @@ internal sealed class InDomainAssemblyResolver(ResolveHelper resolveHelper)
     private readonly Dictionary<string, Assembly?> ResolvedAssemblies = [];
 
     /// <summary>
-    /// Hndles the <see cref="TypeResolve"/>, <see cref="ResourceResolve"/>, or <see cref="AssemblyResolve"/> event of an AppDomain.
+    /// Handles the <see cref="AppDomain.TypeResolve"/>, <see cref="AppDomain.ResourceResolve"/>, or <see cref="AppDomain.AssemblyResolve"/> event of an AppDomain.
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="args">The event data.</param>

@@ -1,7 +1,6 @@
 ﻿namespace NUnit.ApplicationDomain;
 
 using Contracts;
-using global::System;
 using AppDomain = System.AppDomain;
 
 /// <summary>
