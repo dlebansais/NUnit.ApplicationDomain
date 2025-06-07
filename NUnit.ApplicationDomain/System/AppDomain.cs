@@ -453,7 +453,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
             return true;
         }
 
-        if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object[] Args))
+        if (FindContructorAndArgs(type, source, out bool UsePublicConstructor, out object?[] Args))
             if (TryCreateEmptyInstanceWithConstructor(type, UsePublicConstructor, Args, out instance))
                 return true;
 
@@ -461,7 +461,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
         return false;
     }
 
-    private bool TryCreateEmptyInstanceWithConstructor(Type type, bool usePublicConstructor, object[] args, out object? instance)
+    private bool TryCreateEmptyInstanceWithConstructor(Type type, bool usePublicConstructor, object?[] args, out object? instance)
     {
         string AssemblyLocation = type.Assembly.Location;
         string TypeFullName = Contract.AssertNotNull(type.FullName);
@@ -471,7 +471,9 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
             ? type.Assembly
             : Context.LoadFromAssemblyPath(AssemblyLocation);
         BindingFlags Flags = BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic);
-        object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, args, culture: null, activationAttributes: null);
+
+        // ! Allow null arguments to leak in the contructor because we are just passing them over.
+        object? createdInstance = AssemblyInDomain.CreateInstance(TypeFullName, ignoreCase: false, Flags, binder: null, args!, culture: null, activationAttributes: null);
 
         if (createdInstance is not null)
         {
@@ -483,7 +485,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
         return false;
     }
 
-    private bool FindContructorAndArgs(Type type, object source, out bool usePublicConstructor, out object[] args)
+    private bool FindContructorAndArgs(Type type, object source, out bool usePublicConstructor, out object?[] args)
     {
         if (FindContructorAndArgs(type, BindingFlags.Public, source, out args))
         {
@@ -496,7 +498,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
         return FindContructorAndArgs(type, BindingFlags.NonPublic, source, out args);
     }
 
-    private bool FindContructorAndArgs(Type type, BindingFlags publicFlag, object source, out object[] args)
+    private bool FindContructorAndArgs(Type type, BindingFlags publicFlag, object source, out object?[] args)
     {
         args = [];
 

@@ -164,9 +164,11 @@ internal static partial class ParentAppDomainRunner
         return setupAndTeardown;
     }
 
+#pragma warning disable IDE0051 // Remove unused private members
     /// <summary>
     /// create a permission set.
     /// </summary>
     private static PermissionSet GetPermissionSet()
         => new(PermissionState.Unrestricted);
+#pragma warning restore IDE0051 // Remove unused private members
 }
