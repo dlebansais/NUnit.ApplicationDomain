@@ -6,13 +6,13 @@
         <Nullable>enable</Nullable>
         <Platforms>x64</Platforms>
 
-        <Version>4.3.1</Version>
+        <Version>4.4.0</Version>
         <Authors>David Le Bansais</Authors>
         <Company />
         <Product />
-        <Description>A fork of zastrowm/NUnit.ApplicationDomain ported to NUnit 4.3.1</Description>
-        <AssemblyVersion>4.3.1.5</AssemblyVersion>
-        <FileVersion>4.3.1.5</FileVersion>
+        <Description>A fork of zastrowm/NUnit.ApplicationDomain ported to NUnit 4.4.0</Description>
+        <AssemblyVersion>4.4.0.6</AssemblyVersion>
+        <FileVersion>4.4.0.6</FileVersion>
         <RepositoryUrl>https://github.com/dlebansais/NUnit.ApplicationDomain</RepositoryUrl>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 
@@ -61,11 +61,11 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="dlebansais.IDisposableAnalyzers" Version="4.0.8.9">
+        <PackageReference Include="dlebansais.IDisposableAnalyzers" Version="4.0.8.17">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="dlebansais.CSharpLatest" Version="2.1.2">
+        <PackageReference Include="dlebansais.CSharpLatest" Version="2.3.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -84,7 +84,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="NUnit" Version="4.3.2" />
+        <PackageReference Include="NUnit" Version="4.4.0" />
         <PackageReference Include="dlebansais.Method.Contracts-Debug" Version="2.0.5" GeneratePathProperty="true" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
         <PackageReference Include="dlebansais.Method.Contracts" Version="2.0.5" GeneratePathProperty="true" Condition="'$(Configuration)|$(Platform)'!='Debug|x64'" />
     </ItemGroup>
