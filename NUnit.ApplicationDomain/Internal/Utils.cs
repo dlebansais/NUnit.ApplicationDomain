@@ -56,7 +56,7 @@ internal static class Utils
     /// <param name="usePublicConstructor"><see langword="true"/> to use a public constructor.</param>
     /// <param name="args">Arguments for the constructor.</param>
     /// <returns>An instance of T, unwrapped from the domain.</returns>
-    internal static object? CreateInstanceAndUnwrap<T>(this AppDomain domain, bool usePublicConstructor = false, params object[] args)
+    internal static object? CreateInstanceAndUnwrap<T>(this AppDomain domain, bool usePublicConstructor = false, params ReadOnlySpan<object> args)
         => domain.CreateInstanceAndUnwrap(typeof(T).Assembly.Location, Contract.AssertNotNull(typeof(T).FullName), usePublicConstructor, args);
 #else
     /// <summary>

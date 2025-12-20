@@ -41,7 +41,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
     /// <param name="info">The domain construction info.</param>
     /// <param name="grantSet">The domain permission set.</param>
     /// <param name="fullTrustAssemblies">The list of trusted assemblies.</param>
-    private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
+    private AppDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params ReadOnlySpan<StrongName> fullTrustAssemblies)
     {
         Info = info;
         Context = new AppDomainAssemblyLoadContext($"#{DomainCount}", GetType().Assembly.Location);
@@ -107,7 +107,7 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
     /// <param name="info">The domain construction info.</param>
     /// <param name="grantSet">The domain permission set.</param>
     /// <param name="fullTrustAssemblies">The list of trusted assemblies.</param>
-    internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params StrongName[] fullTrustAssemblies)
+    internal static AppDomain CreateDomain(string friendlyName, Evidence? securityInfo, AppDomainSetup info, PermissionSet grantSet, params ReadOnlySpan<StrongName> fullTrustAssemblies)
         => new(friendlyName, securityInfo, info, grantSet, fullTrustAssemblies);
 
     /// <summary>
@@ -117,10 +117,10 @@ internal sealed class AppDomain : MarshalByRefObject, IDisposable
     /// <param name="typeName">The type name.</param>
     /// <param name="usePublicConstructor"><see langword="true"/> to use a public constructor.</param>
     /// <param name="args">The constructor arguments.</param>
-    public object? CreateInstanceAndUnwrap(string assemblyPath, string typeName, bool usePublicConstructor, params object[] args)
+    public object? CreateInstanceAndUnwrap(string assemblyPath, string typeName, bool usePublicConstructor, params ReadOnlySpan<object> args)
     {
         Assembly LoadedAssembly = Context.LoadFromAssemblyPath(assemblyPath);
-        object? Result = LoadedAssembly.CreateInstance(typeName, ignoreCase: false, BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic), binder: null, args, culture: null, activationAttributes: null);
+        object? Result = LoadedAssembly.CreateInstance(typeName, ignoreCase: false, BindingFlags.CreateInstance | BindingFlags.Instance | (usePublicConstructor ? BindingFlags.Public : BindingFlags.NonPublic), binder: null, args.ToArray(), culture: null, activationAttributes: null);
         return Result;
     }
 
