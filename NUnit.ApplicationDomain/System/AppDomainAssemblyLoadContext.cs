@@ -12,10 +12,7 @@ using global::System.Runtime.Loader;
 /// <param name="mainAssemblyToLoadPath">The path to the main assembly loaded in the context.</param>
 internal class AppDomainAssemblyLoadContext(string name, string mainAssemblyToLoadPath) : AssemblyLoadContext(name, isCollectible: true)
 {
-    /// <summary>
-    /// Loads an assembly in nthe context.
-    /// </summary>
-    /// <param name="name">The assembly name.</param>
+    /// <inheritdoc />
     protected override Assembly? Load(AssemblyName name)
     {
         return Resolver.ResolveAssemblyToPath(name) is string AssemblyPath
