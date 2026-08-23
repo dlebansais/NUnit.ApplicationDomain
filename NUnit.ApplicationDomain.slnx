@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="NUnit.ApplicationDomain/NUnit.ApplicationDomain.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Test/NUnit.ApplicationDomain.Base.Test/NUnit.ApplicationDomain.Base.Test.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Test/NUnit.ApplicationDomain.Test/NUnit.ApplicationDomain.Test.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>
